@@ -165,13 +165,23 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
         if (!targetRef || !elemRef) return false;
         const normElem = elemRef.trim().toUpperCase().replace(/^0+/, '');
         const normTarget = targetRef.trim().toUpperCase().replace(/^0+/, '');
+        
+        // 1. Exact match (74A === 74A)
         if (normElem === normTarget) return true;
 
-        // Also match base number (e.g., 74A matches 74)
+        // 2. If both have letters and letters differ (e.g. 74A vs 74B), DO NOT MATCH!
+        const elemHasLetter = /[A-Z]$/.test(normElem);
+        const targetHasLetter = /[A-Z]$/.test(normTarget);
+        if (elemHasLetter && targetHasLetter) {
+            return false;
+        }
+
+        // 3. Fallback match if one is pure number (e.g. 74A vs 74)
         const baseElem = normElem.replace(/[A-Z]$/, '');
         const baseTarget = normTarget.replace(/[A-Z]$/, '');
         return baseElem === baseTarget;
     };
+
 
 
     // Helper to parse transform matrix coordinates (x, y)

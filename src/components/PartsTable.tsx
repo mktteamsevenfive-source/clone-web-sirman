@@ -38,8 +38,19 @@ export const PartsTable: React.FC<PartsTableProps> = ({
     // Helper to check normalized ref equality
     const isRefEqual = (ref1?: string | null, ref2?: string | null) => {
         if (!ref1 || !ref2) return false;
-        return ref1.replace(/^0+/, '') === ref2.replace(/^0+/, '');
+        const norm1 = ref1.trim().toUpperCase().replace(/^0+/, '');
+        const norm2 = ref2.trim().toUpperCase().replace(/^0+/, '');
+        if (norm1 === norm2) return true;
+
+        const hasLetter1 = /[A-Z]$/.test(norm1);
+        const hasLetter2 = /[A-Z]$/.test(norm2);
+        if (hasLetter1 && hasLetter2) return false;
+
+        const base1 = norm1.replace(/[A-Z]$/, '');
+        const base2 = norm2.replace(/[A-Z]$/, '');
+        return base1 === base2;
     };
+
 
     // Auto-scroll to selected ref
     useEffect(() => {
