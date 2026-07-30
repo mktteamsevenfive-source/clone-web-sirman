@@ -1,175 +1,147 @@
 /**
- * SIRMAN CATALOG CLONE - Application Logic
- * Categories sourced from: api-service.sirman.com/service-dwh/categories
- * Scraped: 2026-07-29
+ * SIRMAN CATALOG CLONE - Real Scraped Data Application Logic
+ * Scraped from Sirman API: 13 Categories, 208 Products, 13,149 Real Spare Parts
  */
 
-// 1. Real Category Data from Sirman API
-// Real category data from api-service.sirman.com/service-dwh/categories (1282 total items)
-const SIRMAN_CATEGORIES = [
-    {
-        id: "microwaves-ovens",
-        sirman_id: 18,
-        name: "Microwaves ovens",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M15 25 H85 V75 H15 Z M22 32 H65 V68 H22 Z M72 32 H78 V36 H72 Z M72 42 H78 V46 H72 Z M75 58 A5 5 0 1 0 75 68 A5 5 0 1 0 75 58 Z M28 42 Q 35 35 42 42 T 56 42" stroke="currentColor" stroke-width="3" fill="none"/><path d="M28 54 Q 35 47 42 54 T 56 54" stroke="currentColor" stroke-width="3" fill="none"/></svg>`,
-        count: 4,
-        subcategories: ["PANASONIC 60HZ","PANASONIC","MINNEAPOLIS","TOPWAVE"]
-    },
-    {
-        id: "snack-pizza",
-        sirman_id: 2,
-        name: "Snack and pizza",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M20 70 L50 25 L80 70 Z M20 74 H80 V78 H20 Z M38 52 A5 5 0 1 0 38 62 A5 5 0 1 0 38 52 Z M58 45 A4 4 0 1 0 58 53 A4 4 0 1 0 58 45 Z M52 60 A4 4 0 1 0 52 68 A4 4 0 1 0 52 60 Z"/></svg>`,
-        count: 27,
-        subcategories: ["HOT DOG / BREAD WARMERS 60HZ","PIZZA KNEADERS 60HZ","PIZZA KNEADERS","HOT DOG / BREAD WARMERS","WAFFLE IRON","CONTACT GRILLS","PANINI GRILL"]
-    },
-    {
-        id: "consumables-accessories",
-        sirman_id: 27,
-        name: "Consumables and accessories",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 20 A30 30 0 1 0 50 80 A30 30 0 1 0 50 20 Z M50 35 A15 15 0 1 1 50 65 A15 15 0 1 1 50 35 Z"/><circle cx="75" cy="45" r="10"/></svg>`,
-        count: 13,
-        subcategories: ["ACCESSORIES","BAGS FOR VACUUM MACHINES","ACCESSORIES FOR SLICERS","ACCESSORIES FOR MEAT MACHINES"]
-    },
-    {
-        id: "laundry",
-        sirman_id: 28,
-        name: "Laundry",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M22 20 H78 V80 H22 Z M50 35 A18 18 0 1 0 50 71 A18 18 0 1 0 50 35 Z M50 43 A10 10 0 1 1 50 63 A10 10 0 1 1 50 43 Z"/><circle cx="32" cy="28" r="3"/><circle cx="42" cy="28" r="3"/></svg>`,
-        count: 3,
-        subcategories: ["WASHING MACHINE","DRYER","MANGLE"]
-    },
-    {
-        id: "food-processors",
-        sirman_id: 3,
-        name: "Food processors",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 25 C30 25 18 42 18 55 H82 C82 42 70 25 50 25 Z M47 15 H53 V25 H47 Z M15 58 H85 V64 H15 Z M22 68 H78 V72 H22 Z"/></svg>`,
-        count: 30,
-        subcategories: ["CUTTERS","VEGETABLE CUTTERS","PLANETARY MIXERS","SPIRAL MIXERS","DOUGH LAMINATORS","TUMBLERS"]
-    },
-    {
-        id: "cooking-machines",
-        sirman_id: 31,
-        name: "Cooking machines",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M40 15 C40 15 42 22 38 27 M50 12 C50 12 52 20 48 26 M60 15 C60 15 62 22 58 27" stroke="currentColor" stroke-width="4" stroke-linecap="round" fill="none"/><path d="M20 40 H80 V46 H20 Z M24 48 H76 V65 C76 73.3 69.3 80 61 80 H39 C30.7 80 24 73.3 24 65 Z M15 48 H21 V56 H15 Z M79 48 H85 V56 H79 Z"/></svg>`,
-        count: 11,
-        subcategories: ["SOFTCOOKER","SOFTCOOKER CONTAINER","BBQ","SALAMANDERS","INDUCTION HOBS","CONVECTION OVENS","EASYSOFT","CW"]
-    },
-    {
-        id: "bar-machines",
-        sirman_id: 4,
-        name: "Bar machines",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M70,30 H25 C22.2,30 20,32.2 20,35 V60 C20,68.3 26.7,75 35,75 H50 C58.3,75 65,68.3 65,60 V55 H70 C76.6,55 82,49.6 82,43 C82,35.8 76.6,30 70,30 Z M70,47 H65 V38 H70 C72.8,38 75,40.2 75,43 C75,45.8 72.8,47 70,47 Z M15,82 H75 V88 H15 Z"/></svg>`,
-        count: 15,
-        subcategories: ["ICE CRUSHERS","BLENDERS","CITRUS JUICERS","DRINK MIXERS","ICE SPAGHETTI","SLOW JUICER","MILKSHAKER 60HZ","DISPLAY CABINETS"]
-    },
-    {
-        id: "packaging-machines",
-        sirman_id: 5,
-        name: "Packaging machines",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M25 30 H75 V80 H25 Z M35 20 H65 V28 H35 Z M35 45 A6 6 0 1 0 35 57 A6 6 0 1 0 35 45 Z M55 45 A6 6 0 1 0 55 57 A6 6 0 1 0 55 45 Z M45 62 A6 6 0 1 0 45 74 A6 6 0 1 0 45 62 Z"/></svg>`,
-        count: 9,
-        subcategories: ["VACUUM PACKAGING MACHINES","WRAPPING MACHINES","SEALERS","THERMOSEALERS","VACUUM PACKAGING MACHINES 60HZ"]
-    },
-    {
-        id: "scales",
-        sirman_id: 51,
-        name: "Scales",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M35 25 H65 L78 78 H22 Z"/><text x="32" y="60" font-family="Outfit, sans-serif" font-size="22" font-weight="800" fill="#FFFFFF">KG</text></svg>`,
-        count: 15,
-        subcategories: ["CICLONE 20","CICLONE 28","CICLONE 36","VORTEX 43","VORTEX 55","VORTEX 75","STORM","KIRO","MINNEAPOLIS"]
-    },
-    {
-        id: "ozone-generators",
-        sirman_id: 52,
-        name: "Ozone generators",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><text x="15" y="68" font-family="Outfit, sans-serif" font-size="52" font-weight="800">O</text><text x="56" y="76" font-family="Outfit, sans-serif" font-size="34" font-weight="800">3</text><circle cx="80" cy="35" r="2"/><circle cx="88" cy="45" r="3"/><circle cx="75" cy="55" r="1.5"/></svg>`,
-        count: 7,
-        subcategories: ["O3 TOWER","O3 PORT","PP EXPO","PPJ 6","PPJ 10","PPJ 20","PP ECO"]
-    },
-    {
-        id: "slicers",
-        sirman_id: 6,
-        name: "Slicers",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M75 22 A28 28 0 0 0 47 50 A28 28 0 0 0 75 78 V22 Z M60 22 A28 28 0 0 0 32 50 A28 28 0 0 0 60 78 V22 Z M45 22 A28 28 0 0 0 17 50 A28 28 0 0 0 45 78 V22 Z"/></svg>`,
-        count: 65,
-        subcategories: ["AGATA","TOPAZ","PERLA","MINI","SELCE","GALILEO EVO","CANOVA","PALLADIO","GALILEO","SMART","MIRRA","GEMMA","GIOTTO","LEONARDO","MANTEGNA","RAFFAELLO","TIZIANO EVO"]
-    },
-    {
-        id: "dishwashers",
-        sirman_id: 61,
-        name: "Dishwashers",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M70 30 H25 C22.2 30 20 32.2 20 35 V60 C20 68.3 26.7 75 35 75 H50 C58.3 75 65 68.3 65 60 V55 H70 C76.6 55 82 49.6 82 43 C82 35.8 76.6 30 70 30 Z M70 47 H65 V38 H70 C72.8 38 75 40.2 75 43 C75 45.8 72.8 47 70 47 Z M15 82 H75 V88 H15 Z"/><path d="M25 22 Q 45 15 65 22" stroke="currentColor" stroke-width="3" fill="none"/></svg>`,
-        count: 2,
-        subcategories: ["HP WASH","OSMO3"]
-    },
-    {
-        id: "meat-processors",
-        sirman_id: 7,
-        name: "Meat processors",
-        icon: `<svg viewBox="0 0 100 100" fill="currentColor"><path d="M35 25 C20 25 15 40 22 58 C28 73 50 82 72 75 C85 70 88 52 78 38 C68 24 50 25 35 25 Z M42 42 A8 8 0 1 1 42 58 A8 8 0 1 1 42 42 Z"/></svg>`,
-        count: 28,
-        subcategories: ["MEAT GRINDERS","SAUSAGE STUFFERS","MEAT MIXERS","BONE SAWS","KNIFE STERILIZERS","TENDERISER","HORIZONTAL CUTTER","HAMBURGER PRESSES","HAMBURGER ATTACHMENTS"]
-    }
-];
-
-// Real machine models from Sirman API subcategories
-const MOCK_PRODUCTS = [
-    /* Bar machines - Citrus Juicers */
-    { code: "APOLLO-2015", serial: "SN-2015-0901", model: "APOLLO - from 2015.01", category: "Bar machines", categoryId: "bar-machines", description: "Citrus juicer with lever and stainless steel bowl", status: "in_production", hasExplodedView: true, specs: { power: "150W", speed: "320 RPM", weight: "3.8 kg", origin: "Italy" } },
-    { code: "SIR-BM-ICE-34", serial: "SN-2024-3401", model: "ATLANTIS Ice Crusher", category: "Bar machines", categoryId: "bar-machines", description: "Heavy-duty bar ice crusher for cocktails and beverages", status: "in_production", specs: { power: "350W", capacity: "120 kg/h", weight: "8.2 kg", origin: "Italy" } },
-    { code: "SIR-BM-BL-36", serial: "SN-2024-3601", model: "PRIMO Blender", category: "Bar machines", categoryId: "bar-machines", description: "High-speed commercial blender with 1.5L Tritan jug", status: "in_production", specs: { power: "750W", speed: "18000 RPM", weight: "4.5 kg", origin: "Italy" } },
-    { code: "SIR-BM-SJ-881", serial: "SN-2023-8811", model: "SLOW JUICER", category: "Bar machines", categoryId: "bar-machines", description: "Cold press slow juicer for maximum juice extraction", status: "in_production", specs: { power: "150W", rpm: "60 RPM", weight: "5.2 kg", origin: "Italy" } },
-    /* Slicers */
-    { code: "SIR-SL-GALILEO", serial: "SN-2024-1001", model: "GALILEO EVO", category: "Slicers", categoryId: "slicers", description: "Premium gravity feed slicer with precision blade adjustment", status: "in_production", specs: { blade: "300 mm", power: "210W", cutThickness: "0-15 mm", origin: "Italy" } },
-    { code: "SIR-SL-AGATA-1", serial: "SN-2024-0101", model: "AGATA", category: "Slicers", categoryId: "slicers", description: "High-performance slicer for delicatessen and butchers", status: "in_production", specs: { blade: "250 mm", power: "185W", cutThickness: "0-13 mm", origin: "Italy" } },
-    { code: "SIR-SL-TOPAZ-11", serial: "SN-2022-1101", model: "TOPAZ", category: "Slicers", categoryId: "slicers", description: "Entry-level slicer for deli counters and small shops", status: "in_production", specs: { blade: "220 mm", power: "150W", cutThickness: "0-10 mm", origin: "Italy" } },
-    { code: "SIR-SL-CANOVA-LG", serial: "SN-2018-0091", model: "CANOVA 60HZ", category: "Slicers", categoryId: "slicers", description: "60Hz export model slicer for international markets", status: "out_of_production", specs: { blade: "300 mm", power: "210W", statusNotice: "Legacy model - parts available", origin: "Italy" } },
-    { code: "SIR-SL-MIRRA", serial: "SN-2024-2201", model: "MIRRA", category: "Slicers", categoryId: "slicers", description: "Manual gravity slicer with ergonomic ring guard", status: "in_production", specs: { blade: "195 mm", power: "135W", cutThickness: "0-10 mm", origin: "Italy" } },
-    /* Meat processors */
-    { code: "SIR-MP-TC22", serial: "SN-2024-9981", model: "TC 22 Meat Grinder", category: "Meat processors", categoryId: "meat-processors", description: "Professional meat mincer, neck system Enterprise", status: "in_production", specs: { power: "1100W", output: "300 kg/h", weight: "31 kg", origin: "Italy" } },
-    { code: "SIR-MP-TENDER", serial: "SN-2024-6321", model: "TENDERISER", category: "Meat processors", categoryId: "meat-processors", description: "Automatic meat tenderiser for steaks and escalopes", status: "in_production", specs: { power: "370W", width: "205 mm", weight: "16 kg", origin: "Italy" } },
-    { code: "SIR-MP-SAW-44", serial: "SN-2023-4401", model: "BONE SAW CS 710", category: "Meat processors", categoryId: "meat-processors", description: "Bandsaw for cutting frozen meat and bones in butcher shops", status: "in_production", specs: { power: "750W", blade: "1810 mm", weight: "45 kg", origin: "Italy" } },
-    /* Cooking machines */
-    { code: "SIR-CK-SOFTCOOKER", serial: "SN-2024-6751", model: "SOFTCOOKER Y09", category: "Cooking machines", categoryId: "cooking-machines", description: "Precision temperature water bath with Wi-Fi, 50L tank", status: "in_production", specs: { power: "2000W", tempRange: "24°C - 99°C", tankCapacity: "50L", origin: "Italy" } },
-    { code: "SIR-CK-EASYSOFT", serial: "SN-2024-9461", model: "EASYSOFT", category: "Cooking machines", categoryId: "cooking-machines", description: "Compact sous vide cooker for restaurants and catering", status: "in_production", specs: { power: "1200W", tempRange: "25°C - 95°C", tankCapacity: "22L", origin: "Italy" } },
-    { code: "SIR-CK-CONVEC-619", serial: "SN-2021-6191", model: "CONVECTION OVEN", category: "Cooking machines", categoryId: "cooking-machines", description: "Electric convection oven with steam injection system", status: "in_production", specs: { power: "3400W", maxTemp: "300°C", capacity: "5x GN 1/1", origin: "Italy" } },
-    /* Packaging */
-    { code: "SIR-PK-VACUUM-692", serial: "SN-2024-6921", model: "W8 40 Vacuum Sealer", category: "Packaging machines", categoryId: "packaging-machines", description: "Chamber vacuum sealer with Busch 20m³/h pump", status: "in_production", specs: { sealBar: "410 mm", pump: "Busch 20 m³/h", power: "750W", origin: "Italy" } },
-    { code: "SIR-PK-THERMOS-716", serial: "SN-2023-7161", model: "THERMOSEALER", category: "Packaging machines", categoryId: "packaging-machines", description: "Automatic thermosealer for trays and containers", status: "in_production", specs: { power: "1500W", maxTraySize: "400x300 mm", weight: "35 kg", origin: "Italy" } },
-    /* Scales */
-    { code: "SIR-SC-CICLONE20", serial: "SN-2024-5961", model: "CICLONE 20", category: "Scales", categoryId: "scales", description: "Price computing scale 20kg, dual LCD display, rechargeable", status: "in_production", specs: { capacity: "20 kg", precision: "5 g", plateSize: "250x200 mm", origin: "Italy" } },
-    { code: "SIR-SC-VORTEX55", serial: "SN-2024-1904", model: "VORTEX 55", category: "Scales", categoryId: "scales", description: "High-capacity scale 55kg for supermarkets and retail", status: "in_production", specs: { capacity: "55 kg", precision: "10 g", plateSize: "350x280 mm", origin: "Italy" } },
-    /* Ozone generators */
-    { code: "SIR-OZ-TOWER", serial: "SN-2024-1389", model: "O3 TOWER", category: "Ozone generators", categoryId: "ozone-generators", description: "Freestanding ozone generator for large kitchen areas", status: "in_production", specs: { ozoneOutput: "12 g/h", coverage: "300 m³", weight: "8.5 kg", origin: "Italy" } },
-    { code: "SIR-OZ-PORT", serial: "SN-2024-1390", model: "O3 PORT", category: "Ozone generators", categoryId: "ozone-generators", description: "Portable ozone generator for food storage rooms", status: "in_production", specs: { ozoneOutput: "5 g/h", coverage: "120 m³", weight: "2.1 kg", origin: "Italy" } },
-    /* Snack & pizza */
-    { code: "SIR-SP-PIZZA", serial: "SN-2024-5501", model: "STROMBOLI Pizza Oven", category: "Snack and pizza", categoryId: "snack-pizza", description: "Electric single-deck pizza oven with refractory stone floor", status: "in_production", specs: { power: "3000W", maxTemp: "450°C", chamberSize: "410x360 mm", origin: "Italy" } },
-    /* Dishwashers */
-    { code: "SIR-DW-HPWASH", serial: "SN-2024-1491", model: "HP WASH", category: "Dishwashers", categoryId: "dishwashers", description: "High-pressure undercounter glasswasher for bars and cafes", status: "in_production", specs: { power: "2500W", capacity: "720 racks/h", washTemp: "60°C", origin: "Italy" } },
-    { code: "SIR-DW-OSMO3", serial: "SN-2023-1499", model: "OSMO3", category: "Dishwashers", categoryId: "dishwashers", description: "Ozone-based dishwasher with zero chemical rinse system", status: "in_production", specs: { power: "1800W", capacity: "360 racks/h", technology: "O3 Ozone", origin: "Italy" } }
-];
-
-// App State
+// Application State
+let SIRMAN_CATEGORIES = [];
+let PRODUCTS_DATA = [];
 let currentSearchQuery = "";
 let currentStatusFilter = "all";
 let currentSelectedCategory = null;
+let currentActiveProduct = null;
 let currentZoomScale = 1.0;
+let isDataLoaded = false;
 
-// DOM Elements
+// DOM Initialization
 document.addEventListener("DOMContentLoaded", () => {
-    // Initialize Lucide icons
     if (window.lucide) {
         lucide.createIcons();
     }
 
-    initSidebarCategories();
-    renderCategoryGrid();
+    loadRealCatalogData();
     setupEventListeners();
     setupExplodedViewListeners();
 });
 
-// Populate Sidebar Categories
+let supabaseClient = null;
+
+if (window.supabase && window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && !window.SUPABASE_CONFIG.url.includes("YOUR_SUPABASE_URL")) {
+    try {
+        supabaseClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+        console.log("Supabase client initialized successfully!");
+    } catch (e) {
+        console.warn("Supabase init notice:", e);
+    }
+}
+
+/**
+ * Fetch and load real scraped catalog data
+ */
+async function loadRealCatalogData() {
+    showLoadingState(true);
+
+    // Try Supabase Cloud Database first if initialized
+    if (supabaseClient) {
+        try {
+            const { data: catData, error: catErr } = await supabaseClient.from("categories").select("*").order("name");
+            const { data: prodData, error: prodErr } = await supabaseClient.from("products").select("*").order("model");
+
+            if (!catErr && !prodErr && catData && prodData) {
+                SIRMAN_CATEGORIES = catData;
+                PRODUCTS_DATA = prodData.map(p => ({
+                    ...p,
+                    categoryId: p.category_id || p.categoryId,
+                    categoryName: p.category_name || p.categoryName || p.category,
+                    category: p.category_name || p.category || p.categoryName,
+                    pdfName: p.pdf_name || p.pdfName,
+                    explodedViewId: p.exploded_view_id || p.explodedViewId,
+                    partsCount: p.parts_count !== undefined ? p.parts_count : (p.partsCount || 0),
+                    parts: p.parts || []
+                }));
+
+                isDataLoaded = true;
+                console.log(`[SUPABASE CLOUD] Loaded ${SIRMAN_CATEGORIES.length} categories, ${PRODUCTS_DATA.length} products.`);
+                initSidebarCategories();
+                renderCategoryGrid();
+                showLoadingState(false);
+                return;
+            }
+        } catch (sbErr) {
+            console.warn("Supabase query failed, falling back to local server:", sbErr);
+        }
+    }
+
+    try {
+        const catResp = await fetch("/api/categories");
+        if (!catResp.ok) throw new Error(`Failed categories: ${catResp.statusText}`);
+        SIRMAN_CATEGORIES = await catResp.json();
+
+        const prodResp = await fetch("/api/products?limit=500");
+        if (!prodResp.ok) throw new Error(`Failed products: ${prodResp.statusText}`);
+        const prodData = await prodResp.json();
+        PRODUCTS_DATA = (prodData.products || []).map(p => ({
+            ...p,
+            categoryId: p.categoryId || p.category_id,
+            categoryName: p.categoryName || p.category_name || p.category,
+            category: p.category || p.category_name || p.categoryName,
+            pdfName: p.pdfName || p.pdf_name,
+            explodedViewId: p.explodedViewId || p.exploded_view_id,
+            partsCount: p.partsCount !== undefined ? p.partsCount : (p.parts_count || 0),
+            parts: p.parts || []
+        }));
+
+        isDataLoaded = true;
+        console.log(`Loaded ${SIRMAN_CATEGORIES.length} categories, ${PRODUCTS_DATA.length} products from SQLite DB.`);
+
+        initSidebarCategories();
+        renderCategoryGrid();
+    } catch (err) {
+        console.warn("Falling back to sirman_catalog_data.json:", err);
+        try {
+            const response = await fetch("./sirman_catalog_data.json");
+            const data = await response.json();
+            SIRMAN_CATEGORIES = data.categories || [];
+            PRODUCTS_DATA = (data.products || []).map(p => ({
+                ...p,
+                categoryId: p.categoryId || p.category_id,
+                categoryName: p.categoryName || p.category_name || p.category,
+                category: p.category || p.category_name || p.categoryName,
+                pdfName: p.pdfName || p.pdf_name,
+                explodedViewId: p.explodedViewId || p.exploded_view_id,
+                partsCount: p.partsCount !== undefined ? p.partsCount : (p.parts_count || 0),
+                parts: p.parts || []
+            }));
+            isDataLoaded = true;
+            initSidebarCategories();
+            renderCategoryGrid();
+        } catch (fallbackErr) {
+            console.error("Data load error:", fallbackErr);
+        }
+    } finally {
+        showLoadingState(false);
+    }
+}
+
+function showLoadingState(loading) {
+    const grid = document.getElementById("category-grid");
+    if (!grid) return;
+    if (loading) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 64px 20px;">
+                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #E2E8F0; border-top-color: #C8102E; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                <p style="margin-top: 16px; color: #64748B; font-weight: 500; font-size: 15px;">Loading real Sirman catalog data...</p>
+            </div>
+            <style>
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            </style>
+        `;
+    }
+}
+
+/**
+ * Populate Sidebar Categories list
+ */
 function initSidebarCategories() {
     const sidebarList = document.getElementById("sidebar-category-list");
     if (!sidebarList) return;
@@ -178,28 +150,30 @@ function initSidebarCategories() {
         <li class="category-item">
             <a href="#" class="category-link" data-cat-id="${cat.id}">
                 ${cat.name}
+                <span style="margin-left: auto; font-size: 11px; color: #94A3B8; background: #F1F5F9; padding: 2px 6px; border-radius: 10px;">${cat.count}</span>
             </a>
         </li>
     `).join("");
 }
 
-// Render Category Grid Cards
+/**
+ * Render Main Category Grid Cards
+ */
 function renderCategoryGrid() {
     const grid = document.getElementById("category-grid");
     if (!grid) return;
 
     let categoriesToDisplay = SIRMAN_CATEGORIES;
 
-    // Filter by search query if applicable
     if (currentSearchQuery.trim() !== "") {
         const query = currentSearchQuery.toLowerCase();
         categoriesToDisplay = SIRMAN_CATEGORIES.filter(cat => 
             cat.name.toLowerCase().includes(query) ||
-            MOCK_PRODUCTS.some(p => p.categoryId === cat.id && (
+            PRODUCTS_DATA.some(p => p.categoryId === cat.id && (
                 p.code.toLowerCase().includes(query) ||
-                p.serial.toLowerCase().includes(query) ||
                 p.model.toLowerCase().includes(query) ||
-                p.description.toLowerCase().includes(query)
+                p.serial.toLowerCase().includes(query) ||
+                p.parts.some(pt => pt.code.toLowerCase().includes(query) || pt.name.toLowerCase().includes(query))
             ))
         );
     }
@@ -209,7 +183,7 @@ function renderCategoryGrid() {
             <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: white; border-radius: 12px; border: 1px solid #E2E8F0;">
                 <i data-lucide="search-x" style="width: 48px; height: 48px; color: #94A3B8; margin-bottom: 12px;"></i>
                 <h3 style="font-size: 18px; font-weight: 600; color: #1E293B; margin-bottom: 6px;">No categories or products found</h3>
-                <p style="color: #64748B; font-size: 14px;">Try searching for a different part code, serial number, or machine category.</p>
+                <p style="color: #64748B; font-size: 14px;">Try searching for a different part code, serial number, or machine model.</p>
             </div>
         `;
         if (window.lucide) lucide.createIcons();
@@ -218,7 +192,7 @@ function renderCategoryGrid() {
 
     grid.innerHTML = categoriesToDisplay.map(cat => `
         <div class="category-card" data-cat-id="${cat.id}" role="button" tabindex="0">
-            <span class="category-card-count">${cat.count}</span>
+            <span class="category-card-count">${cat.count} models</span>
             <div class="category-icon-wrapper">
                 ${cat.icon}
             </div>
@@ -227,7 +201,9 @@ function renderCategoryGrid() {
     `).join("");
 }
 
-// Event Listeners setup
+/**
+ * Setup General UI Event Listeners
+ */
 function setupEventListeners() {
     // Brand Logo Click -> Go to catalog
     document.getElementById("brand-logo").addEventListener("click", () => {
@@ -342,7 +318,9 @@ function setupEventListeners() {
     });
 }
 
-// Display Products Table View
+/**
+ * Display Products Table View
+ */
 function showProductsView(categoryObj, searchQuery = "") {
     const grid = document.getElementById("category-grid");
     const productsView = document.getElementById("products-view");
@@ -360,19 +338,23 @@ function showProductsView(categoryObj, searchQuery = "") {
     renderProductsTable();
 }
 
-// Hide Products View & return to catalog grid
+/**
+ * Hide Products View & return to category grid
+ */
 function hideProductsView() {
     document.getElementById("category-grid").hidden = false;
     document.getElementById("products-view").hidden = true;
     document.getElementById("page-title").textContent = "Catalog";
 }
 
-// Render Products Table
+/**
+ * Render Products Table with Real Scraped Products
+ */
 function renderProductsTable() {
     const tbody = document.getElementById("products-table-body");
     const countEl = document.getElementById("products-count");
 
-    let filtered = MOCK_PRODUCTS;
+    let filtered = PRODUCTS_DATA;
 
     if (currentSelectedCategory) {
         filtered = filtered.filter(p => p.categoryId === currentSelectedCategory.id);
@@ -382,9 +364,10 @@ function renderProductsTable() {
         const q = currentSearchQuery.toLowerCase();
         filtered = filtered.filter(p => 
             p.code.toLowerCase().includes(q) ||
-            p.serial.toLowerCase().includes(q) ||
             p.model.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q)
+            p.serial.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q) ||
+            p.parts.some(pt => pt.code.toLowerCase().includes(q) || pt.name.toLowerCase().includes(q))
         );
     }
 
@@ -392,7 +375,7 @@ function renderProductsTable() {
         filtered = filtered.filter(p => p.status === currentStatusFilter);
     }
 
-    countEl.textContent = `${filtered.length} item(s) found`;
+    countEl.textContent = `${filtered.length} model(s) found`;
 
     if (filtered.length === 0) {
         tbody.innerHTML = `
@@ -409,11 +392,11 @@ function renderProductsTable() {
         <tr>
             <td>
                 <div class="product-img-thumb" style="display: flex; align-items: center; justify-content: center; background: #F1F5F9;">
-                    <i data-lucide="package" style="width: 24px; height: 24px; color: #64748B;"></i>
+                    <i data-lucide="package" style="width: 24px; height: 24px; color: #C8102E;"></i>
                 </div>
             </td>
             <td>
-                <div style="font-weight: 600; color: #1E293B; cursor: pointer;" onclick="openExplodedView('${p.code}')">
+                <div style="font-weight: 600; color: #1E293B; cursor: pointer;" onclick="openExplodedViewForProduct('${p.id}')">
                     ${p.model}
                 </div>
                 <div style="margin-top: 2px;">
@@ -422,14 +405,17 @@ function renderProductsTable() {
                 </div>
             </td>
             <td>${p.category}</td>
-            <td style="color: #475569; max-width: 280px;">${p.description}</td>
+            <td style="color: #475569; max-width: 280px;">
+                ${p.description}
+                ${p.pdfName ? `<div style="font-size: 11px; color: #0284C7; margin-top: 2px;"><i data-lucide="file-text" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;"></i> ${p.pdfName}</div>` : ''}
+            </td>
             <td>
-                <span class="status-tag ${p.status === 'in_production' ? 'in-production' : 'out-of-production'}">
-                    ${p.status === 'in_production' ? 'In production' : 'Out of production'}
+                <span class="status-tag in-production" style="font-size: 12px;">
+                    ${p.partsCount} Spare Parts
                 </span>
             </td>
             <td>
-                <button class="btn-view-details" style="background: #0284C7; color: white; border: none; font-weight: 600;" onclick="openExplodedView('${p.code}')">
+                <button class="btn-view-details" style="background: #0284C7; color: white; border: none; font-weight: 600;" onclick="openExplodedViewForProduct('${p.id}')">
                     <i data-lucide="scissors" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
                     Exploded View
                 </button>
@@ -440,7 +426,9 @@ function renderProductsTable() {
     if (window.lucide) lucide.createIcons();
 }
 
-// Show/Hide Filter Badges
+/**
+ * Filter Badge Controls
+ */
 function showFilterBadge(text) {
     const badge = document.getElementById("active-filter-badge");
     document.getElementById("filter-badge-text").textContent = text;
@@ -451,9 +439,11 @@ function hideFilterBadge() {
     document.getElementById("active-filter-badge").hidden = true;
 }
 
-// Modal handling
-window.openProductModal = function(code) {
-    const product = MOCK_PRODUCTS.find(p => p.code === code);
+/**
+ * Modal Handling
+ */
+window.openProductModal = function(productId) {
+    const product = PRODUCTS_DATA.find(p => String(p.id) === String(productId) || p.code === productId);
     if (!product) return;
 
     const modalContent = document.getElementById("modal-content");
@@ -465,9 +455,7 @@ window.openProductModal = function(code) {
             <div class="modal-product-info">
                 <span class="part-code-badge" style="font-size: 14px;">${product.code}</span>
                 <h2 style="margin-top: 6px; font-size: 22px;">${product.model}</h2>
-                <span class="status-tag ${product.status === 'in_production' ? 'in-production' : 'out-of-production'}">
-                    ${product.status === 'in_production' ? 'In production' : 'Out of production'}
-                </span>
+                <span class="status-tag in-production">In production</span>
             </div>
         </div>
 
@@ -484,12 +472,14 @@ window.openProductModal = function(code) {
                 <label>Category</label>
                 <span>${product.category}</span>
             </div>
-            ${Object.entries(product.specs).map(([key, val]) => `
-                <div class="spec-item">
-                    <label>${key.replace(/([A-Z])/g, ' $1').toUpperCase()}</label>
-                    <span>${val}</span>
-                </div>
-            `).join("")}
+            <div class="spec-item">
+                <label>PDF Diagram</label>
+                <span>${product.pdfName || "N/A"}</span>
+            </div>
+            <div class="spec-item">
+                <label>Total Parts</label>
+                <span>${product.partsCount} items</span>
+            </div>
         </div>
     `;
 
@@ -502,7 +492,7 @@ function closeModal() {
 }
 
 /* ==========================================================================
-   EXPLODED VIEW PAGE LOGIC
+   EXPLODED VIEW PAGE LOGIC - REAL SCRAPED SPARE PARTS INTEGRATION
    ========================================================================== */
 
 function setupExplodedViewListeners() {
@@ -514,17 +504,19 @@ function setupExplodedViewListeners() {
 
     // View mode toggle buttons (Exploded view only / List only / Both)
     const modeToggle = document.getElementById("view-mode-toggle");
-    modeToggle.addEventListener("click", (e) => {
-        const btn = e.target.closest(".mode-btn");
-        if (btn) {
-            const mode = btn.getAttribute("data-mode");
-            modeToggle.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
+    if (modeToggle) {
+        modeToggle.addEventListener("click", (e) => {
+            const btn = e.target.closest(".mode-btn");
+            if (btn) {
+                const mode = btn.getAttribute("data-mode");
+                modeToggle.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
 
-            const workspace = document.getElementById("exploded-workspace");
-            workspace.className = `exploded-workspace mode-${mode}`;
-        }
-    });
+                const workspace = document.getElementById("exploded-workspace");
+                workspace.className = `exploded-workspace mode-${mode}`;
+            }
+        });
+    }
 
     // Zoom Controls
     const viewport = document.getElementById("diagram-viewport");
@@ -548,67 +540,267 @@ function setupExplodedViewListeners() {
         viewport.style.transform = `scale(1.0)`;
     });
 
-    // Hotspot group clicks -> Show Part Popover Menu
+    // Hotspot group clicks -> Highlight matching parts in real list
     const popover = document.getElementById("part-popover-menu");
     document.querySelectorAll(".hotspot-group").forEach(group => {
         group.addEventListener("click", (e) => {
             e.stopPropagation();
-            const partId = group.getAttribute("data-part-id");
-            
-            // Highlight part in right list
-            document.querySelectorAll(".part-row-item").forEach(row => {
-                row.classList.remove("highlighted");
-                if (row.getAttribute("data-part-id") === partId) {
-                    row.classList.add("highlighted");
-                    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            });
-
-            // Toggle popover menu
-            popover.hidden = false;
+            const refId = group.getAttribute("data-part-id");
+            highlightPartsByRef(refId);
         });
     });
 
     // Click outside popover to close
     document.addEventListener("click", (e) => {
-        if (!e.target.closest("#part-popover-menu") && !e.target.closest(".hotspot-group")) {
+        if (popover && !e.target.closest("#part-popover-menu") && !e.target.closest(".hotspot-group")) {
             popover.hidden = true;
         }
     });
 
     // Click part item in right list -> Highlight diagram hotspot
-    document.getElementById("parts-scroll-list").addEventListener("click", (e) => {
-        const item = e.target.closest(".part-row-item");
-        if (item) {
-            const partId = item.getAttribute("data-part-id");
-            document.querySelectorAll(".part-row-item").forEach(r => r.classList.remove("highlighted"));
-            item.classList.add("highlighted");
+    const partsListContainer = document.getElementById("parts-scroll-list");
+    if (partsListContainer) {
+        partsListContainer.addEventListener("click", (e) => {
+            const item = e.target.closest(".part-row-item");
+            if (item) {
+                const ref = item.getAttribute("data-ref");
+                document.querySelectorAll(".part-row-item").forEach(r => r.classList.remove("highlighted"));
+                item.classList.add("highlighted");
 
-            document.querySelectorAll(".hotspot-group").forEach(h => {
-                h.classList.remove("active");
-                if (h.getAttribute("data-part-id") === partId) {
-                    h.classList.add("active");
-                }
-            });
-        }
-    });
+                document.querySelectorAll(".hotspot-group").forEach(h => {
+                    h.classList.remove("active");
+                    if (h.getAttribute("data-part-id") === ref) {
+                        h.classList.add("active");
+                    }
+                });
+            }
+        });
+    }
 }
 
-// Navigation helpers
-window.openExplodedView = function(modelCode) {
+/**
+ * Open Exploded View Page for a specific Real Product
+ */
+window.openExplodedViewForProduct = async function(productId) {
+    let product = PRODUCTS_DATA.find(p => String(p.id) === String(productId) || p.code === productId);
+    if (!product) {
+        try {
+            const resp = await fetch(`/api/products/${productId}`);
+            if (resp.ok) product = await resp.json();
+        } catch (e) { console.error(e); }
+    }
+    if (!product) {
+        console.warn(`Product ${productId} not found`);
+        return;
+    }
+
+    if (!product.parts || product.parts.length === 0) {
+        if (supabaseClient) {
+            try {
+                const { data: partsData } = await supabaseClient.from("parts").select("*").eq("product_id", product.id).order("ref");
+                if (partsData && partsData.length > 0) product.parts = partsData;
+            } catch (e) { console.error("Supabase parts fetch err:", e); }
+        }
+        if (!product.parts || product.parts.length === 0) {
+            try {
+                const resp = await fetch(`/api/products/${product.id}`);
+                if (resp.ok) {
+                    const fullProd = await resp.json();
+                    product.parts = fullProd.parts || [];
+                }
+            } catch (e) { console.error(e); }
+        }
+    }
+
+    currentActiveProduct = product;
+
     const catalogContainer = document.getElementById("catalog-container");
     const explodedPage = document.getElementById("exploded-view-page");
+    const titleEl = document.getElementById("exploded-product-title");
 
     if (catalogContainer) catalogContainer.hidden = true;
     if (explodedPage) explodedPage.hidden = false;
 
+    // Update Product Title & PDF Info
+    if (titleEl) {
+        titleEl.innerHTML = `
+            ${product.model}
+            ${product.pdfName ? `<span style="display: inline-flex; align-items: center; gap: 4px; background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 600; margin-left: 10px; vertical-align: middle;"><i data-lucide="file-text" style="width: 13px; height: 13px;"></i> ${product.pdfName}</span>` : ''}
+        `;
+    }
+
+    // Render Real Spare Parts for this product
+    renderRealSparePartsList(product);
+
+    // Render Diagram Image or Fallback Notice
+    renderDiagramCanvas(product);
+
     // Reset zoom
     currentZoomScale = 1.0;
-    document.getElementById("diagram-viewport").style.transform = `scale(1.0)`;
-    document.getElementById("part-popover-menu").hidden = true;
+
+    const popover = document.getElementById("part-popover-menu");
+    if (popover) popover.hidden = true;
 
     if (window.lucide) lucide.createIcons();
 };
+
+/**
+ * Render Diagram Canvas (Real Image if downloaded, or fallback state)
+ */
+function renderDiagramCanvas(product) {
+    const canvasContainer = document.getElementById("diagram-canvas-container");
+    if (!canvasContainer) return;
+
+    if (!product || !product.pdfName) {
+        canvasContainer.innerHTML = `
+            <div class="diagram-viewport" id="diagram-viewport" style="text-align: center; padding: 60px 20px;">
+                <i data-lucide="file-question" style="width: 48px; height: 48px; color: #94A3B8; margin-bottom: 12px;"></i>
+                <h3 style="font-size: 16px; font-weight: 600; color: #1E293B;">No Diagram File Specified</h3>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+
+    // Show loading state immediately to clear any initial template artwork
+    canvasContainer.innerHTML = `
+        <div class="diagram-viewport" id="diagram-viewport" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 480px; padding: 32px 20px;">
+            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #E2E8F0; border-top-color: #0284C7; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <p style="margin-top: 16px; color: #64748B; font-weight: 500; font-size: 14px;">Loading ${product.pdfName} diagram image...</p>
+        </div>
+    `;
+
+    // Construct Supabase Storage CDN URL
+    const supabaseProjectUrl = "https://ofrerwyoasklgsejlbzr.supabase.co";
+    const cdnUrl = `${supabaseProjectUrl}/storage/v1/object/public/diagram_images/${product.pdfName}.png`;
+    const localImgPath = `./diagram_images/${product.pdfName}.png`;
+
+    const testImg = new Image();
+    testImg.onload = function() {
+        canvasContainer.innerHTML = `
+            <div class="diagram-viewport" id="diagram-viewport" style="display: flex; justify-content: center; align-items: center; min-height: 500px; padding: 24px;">
+                <img src="${cdnUrl}" alt="${product.model} Exploded View Diagram" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); background: white;">
+            </div>
+        `;
+    };
+
+    testImg.onerror = function() {
+        // Fallback to local image path
+        const fallbackImg = new Image();
+        fallbackImg.onload = function() {
+            canvasContainer.innerHTML = `
+                <div class="diagram-viewport" id="diagram-viewport" style="display: flex; justify-content: center; align-items: center; min-height: 500px; padding: 24px;">
+                    <img src="${localImgPath}" alt="${product.model} Exploded View Diagram" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); background: white;">
+                </div>
+            `;
+        };
+        fallbackImg.onerror = function() {
+            canvasContainer.innerHTML = `
+                <div class="diagram-viewport" id="diagram-viewport" style="display: flex; align-items: center; justify-content: center; min-height: 480px; padding: 32px 20px;">
+                    <div style="background: white; border: 1px dashed #CBD5E1; border-radius: 12px; padding: 32px; max-width: 540px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <i data-lucide="image-off" style="width: 44px; height: 44px; color: #94A3B8; margin-bottom: 12px;"></i>
+                        <h3 style="font-size: 16px; font-weight: 600; color: #1E293B; margin-bottom: 4px;">Diagram Image Not Available</h3>
+                        <p style="font-size: 13px; color: #64748B; margin-bottom: 8px;">
+                            File: <code style="background: #F1F5F9; padding: 2px 8px; border-radius: 4px; color: #0284C7; font-weight: 600;">${product.pdfName}.png</code>
+                        </p>
+                    </div>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+        };
+        fallbackImg.src = localImgPath;
+    };
+
+    testImg.src = cdnUrl;
+}                    <h3 style="font-size: 16px; font-weight: 600; color: #1E293B; margin-bottom: 4px;">Diagram Image Not Downloaded Yet</h3>
+                    <p style="font-size: 13px; color: #64748B; margin-bottom: 16px;">
+                        File: <code style="background: #F1F5F9; padding: 2px 8px; border-radius: 4px; color: #0284C7; font-weight: 600;">${product.pdfName}</code>
+                    </p>
+                    <div style="font-size: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; text-align: left; color: #334155; font-family: monospace;">
+                        <span style="color: #64748B;"># Run script in terminal to download diagram images:</span><br>
+                        <strong style="color: #0284C7;">python download_diagrams.py</strong>
+                    </div>
+                </div>
+            </div>
+        `;
+        if (window.lucide) lucide.createIcons();
+    };
+
+    testImg.src = imgPath;
+}
+
+/**
+ * Backward compatibility alias
+ */
+window.openExplodedView = function(modelCode) {
+    openExplodedViewForProduct(modelCode);
+};
+
+/**
+ * Render real spare parts into the right pane (#parts-scroll-list)
+ */
+function renderRealSparePartsList(product) {
+    const listContainer = document.getElementById("parts-scroll-list");
+    const countTag = document.getElementById("parts-count-tag");
+
+    if (!listContainer) return;
+
+    const parts = product.parts || [];
+    if (countTag) {
+        countTag.textContent = `${parts.length} items`;
+    }
+
+    if (parts.length === 0) {
+        listContainer.innerHTML = `
+            <div style="padding: 24px; text-align: center; color: #64748B;">
+                <i data-lucide="info" style="width: 32px; height: 32px; color: #94A3B8; margin-bottom: 8px;"></i>
+                <p style="font-size: 14px;">No spare parts listed for this model yet.</p>
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = parts.map((pt, idx) => `
+        <div class="part-row-item ${idx === 0 ? 'highlighted' : ''}" data-part-id="${pt.code}" data-ref="${pt.ref}" data-code="${pt.code}">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="part-row-code">
+                    ${pt.ref ? `<span style="display: inline-block; background: #0284C7; color: white; border-radius: 4px; padding: 1px 6px; font-size: 11px; margin-right: 6px; font-weight: 700;">${pt.ref}</span>` : ''}
+                    ${pt.code}
+                </div>
+                ${pt.price > 0 ? `<div style="font-weight: 700; color: #16A34A; font-size: 13px;">€ ${pt.price.toFixed(2)}</div>` : ''}
+            </div>
+            <div class="part-row-desc" style="margin-top: 4px;">${pt.name}</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 11px; color: #64748B;">
+                <span>${pt.stock > 0 ? `<span style="color: #16A34A; font-weight: 600;">In Stock (${pt.stock})</span>` : '<span style="color: #94A3B8;">Check Availability</span>'}</span>
+                ${pt.view_name ? `<span style="font-size: 10px; color: #94A3B8;">${pt.view_name}</span>` : ''}
+            </div>
+        </div>
+    `).join("");
+}
+
+/**
+ * Highlight parts by diagram reference number
+ */
+function highlightPartsByRef(refId) {
+    const listContainer = document.getElementById("parts-scroll-list");
+    if (!listContainer || !currentActiveProduct) return;
+
+    let matchedRow = null;
+    document.querySelectorAll(".part-row-item").forEach(row => {
+        const rowRef = row.getAttribute("data-ref");
+        const rowCode = row.getAttribute("data-code");
+        if (rowRef === refId || rowCode === refId) {
+            row.classList.add("highlighted");
+            if (!matchedRow) matchedRow = row;
+        } else {
+            row.classList.remove("highlighted");
+        }
+    });
+
+    if (matchedRow) {
+        matchedRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+}
 
 function hideExplodedView() {
     const catalogContainer = document.getElementById("catalog-container");

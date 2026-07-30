@@ -1,0 +1,11 @@
+# Dependencies & temp
+.netlify/
+*.png
+!diagram_images/*.png
+*.jpg
+session_state*.json
+_temp_*
+
+# Python
+__pycache__/
+*.pyc
