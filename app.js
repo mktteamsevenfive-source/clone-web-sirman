@@ -726,22 +726,8 @@ function renderDiagramCanvas(product) {
     };
 
     testImg.src = cdnUrl;
-}                    <h3 style="font-size: 16px; font-weight: 600; color: #1E293B; margin-bottom: 4px;">Diagram Image Not Downloaded Yet</h3>
-                    <p style="font-size: 13px; color: #64748B; margin-bottom: 16px;">
-                        File: <code style="background: #F1F5F9; padding: 2px 8px; border-radius: 4px; color: #0284C7; font-weight: 600;">${product.pdfName}</code>
-                    </p>
-                    <div style="font-size: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; text-align: left; color: #334155; font-family: monospace;">
-                        <span style="color: #64748B;"># Run script in terminal to download diagram images:</span><br>
-                        <strong style="color: #0284C7;">python download_diagrams.py</strong>
-                    </div>
-                </div>
-            </div>
-        `;
-        if (window.lucide) lucide.createIcons();
-    };
-
-    testImg.src = imgPath;
 }
+
 
 /**
  * Backward compatibility alias
