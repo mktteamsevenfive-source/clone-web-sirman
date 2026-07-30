@@ -1,109 +1,92 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Search, User, ShieldCheck, LogIn, LogOut, Wrench } from 'lucide-react';
-import { UserProfile } from '@/lib/types';
+import React from 'react';
+import { Search, X } from 'lucide-react';
 
 interface NavbarProps {
-    onSearch?: (query: string) => void;
-    user?: UserProfile | null;
-    onLoginClick?: () => void;
-    onLogoutClick?: () => void;
+    searchQuery: string;
+    onSearchChange: (query: string) => void;
+    onClearSearch: () => void;
+    activeTab: 'home' | 'catalog';
+    onTabChange: (tab: 'home' | 'catalog') => void;
+    onBrandClick: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-    onSearch,
-    user,
-    onLoginClick,
-    onLogoutClick,
+    searchQuery,
+    onSearchChange,
+    onClearSearch,
+    activeTab,
+    onTabChange,
+    onBrandClick,
 }) => {
-    const [searchQuery, setSearchQuery] = useState('');
-
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        setSearchQuery(val);
-        if (onSearch) onSearch(val);
-    };
-
     return (
-        <header className="sticky top-0 z-50 bg-[#324050] text-white shadow-md">
-            {/* Top Bar */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+            {/* Top Header Row */}
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16 gap-4">
                     {/* Brand Logo */}
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <span className="text-2xl font-black tracking-tight text-white group-hover:text-red-400 transition-colors">
+                    <div
+                        onClick={onBrandClick}
+                        className="flex items-center gap-2 cursor-pointer group select-none"
+                    >
+                        <span className="font-heading text-2xl sm:text-3xl font-extrabold text-[#C8102E] tracking-tight group-hover:opacity-90 transition-opacity">
                             SIRMAN
                         </span>
-                        <span className="bg-[#C8102E] text-white text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                        <span className="bg-red-50 text-[#C8102E] border border-red-100 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                             SERVICE
                         </span>
-                    </Link>
+                    </div>
 
-                    {/* Live Search Bar */}
-                    <div className="flex-1 max-w-xl mx-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    {/* Search Bar */}
+                    <div className="flex-1 max-w-xl mx-2 sm:mx-6">
+                        <div className="relative group">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#C8102E] transition-colors" />
                             <input
                                 type="text"
                                 value={searchQuery}
-                                onChange={handleSearchChange}
-                                placeholder="Search part codes, model names, or serial numbers..."
-                                className="w-full bg-slate-800/80 text-white placeholder-slate-400 text-sm rounded-lg pl-10 pr-4 py-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-[#C8102E] focus:border-transparent transition-all"
+                                onChange={(e) => onSearchChange(e.target.value)}
+                                placeholder="Search part codes or serial number..."
+                                className="w-full bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-900 placeholder:text-slate-400 text-sm rounded-xl pl-10 pr-10 py-2 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C8102E]/20 focus:border-[#C8102E] transition-all shadow-inner"
                             />
-                        </div>
-                    </div>
-
-                    {/* Auth & Role Section */}
-                    <div className="flex items-center gap-3">
-                        {user ? (
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
-                                    {user.role === 'admin' ? (
-                                        <ShieldCheck className="w-4 h-4 text-red-400" />
-                                    ) : user.role === 'technician' ? (
-                                        <Wrench className="w-4 h-4 text-blue-400" />
-                                    ) : (
-                                        <User className="w-4 h-4 text-emerald-400" />
-                                    )}
-                                    <div className="text-xs">
-                                        <div className="font-semibold text-white truncate max-w-[120px]">{user.email}</div>
-                                        <div className="text-[10px] text-slate-400 capitalize">{user.role}</div>
-                                    </div>
-                                </div>
+                            {searchQuery.trim() !== '' && (
                                 <button
-                                    onClick={onLogoutClick}
-                                    className="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                                    title="Sign Out"
+                                    onClick={onClearSearch}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-full transition-colors"
+                                    title="Clear search"
                                 >
-                                    <LogOut className="w-4 h-4" />
+                                    <X className="w-3.5 h-3.5" />
                                 </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={onLoginClick}
-                                className="flex items-center gap-2 bg-[#C8102E] hover:bg-[#A00C24] text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-sm"
-                            >
-                                <LogIn className="w-4 h-4" />
-                                Sign In / Register
-                            </button>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Sub-nav Category bar */}
-            <div className="bg-[#273342] border-t border-slate-700/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-6 text-xs font-medium py-2.5 overflow-x-auto scrollbar-none">
-                        <Link href="/" className="text-white hover:text-red-400 whitespace-nowrap transition-colors">
-                            Home Catalog
-                        </Link>
-                        <span className="text-slate-600">|</span>
-                        <span className="text-slate-400 whitespace-nowrap">
-                            13 Categories • 208 Models • 13,149 Spare Parts
-                        </span>
+            {/* Sub-Header Navigation */}
+            <div className="bg-[#324050] text-white border-t border-slate-700/50">
+                <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+                    <nav className="flex space-x-1 text-sm font-medium">
+                        <button
+                            onClick={() => onTabChange('home')}
+                            className={`px-5 py-3 relative transition-all ${
+                                activeTab === 'home'
+                                    ? 'text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-white'
+                                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                            }`}
+                        >
+                            Home
+                        </button>
+                        <button
+                            onClick={() => onTabChange('catalog')}
+                            className={`px-5 py-3 relative transition-all ${
+                                activeTab === 'catalog'
+                                    ? 'text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-white'
+                                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                            }`}
+                        >
+                            Catalog
+                        </button>
                     </nav>
                 </div>
             </div>

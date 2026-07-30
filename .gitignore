@@ -1,11 +1,16 @@
 # Dependencies & temp
+node_modules/
+.next/
 .netlify/
-*.png
-!diagram_images/*.png
-*.jpg
+.env*.local
+*.tsbuildinfo
+
+# Python & Sessions
+__pycache__/
+*.pyc
+sirman_headers.json
 session_state*.json
 _temp_*
 
-# Python
-__pycache__/
-*.pyc
+# Media cache
+public/exploded-views/

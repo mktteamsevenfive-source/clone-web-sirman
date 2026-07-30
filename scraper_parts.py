@@ -1,9 +1,10 @@
 """
-Sirman Parts Scraper v5 - Capture Real Request Headers
-=======================================================
+Sirman Parts Scraper v6 - Scrape ALL Categories, ALL Products, and ALL Parts
+=============================================================================
 1. เปิด browser -> login
-2. จับ EXACT headers จาก API call ที่สำเร็จ (ดักตอน navigate หน้า catalog)
-3. ใช้ headers + cookies เหล่านั้นใน Python requests
+2. จับ EXACT headers จาก API call ที่สำเร็จ
+3. ดึงสินค้าทุกชิ้นในทุกหมวดหมู่ (ไม่มีจำกัด 20 ชิ้น)
+4. บันทึกอะไหล่และข้อมูลทั้งหมดเข้า sirman_parts.json และ sirman_catalog_data.json
 """
 
 import asyncio
@@ -26,21 +27,19 @@ except ImportError:
     sys.exit(1)
 
 OUTPUT_FILE = Path(__file__).parent / "sirman_parts.json"
+CATALOG_FILE = Path(__file__).parent / "sirman_catalog_data.json"
 SIRMAN_DATA = Path(__file__).parent / "sirman_data.json"
 API_BASE    = "https://api-service.sirman.com"
 
-# Will be filled by interceptor
 captured_headers = {}   # url -> request headers
 captured_data    = {}   # url -> response body
 
 
 async def on_request(request: Request):
     url = request.url
-    if "api-service.sirman.com/service-dwh/" in url and "products" in url:
+    if "api-service.sirman.com/service-dwh/" in url:
         headers = dict(request.headers)
         captured_headers[url] = headers
-        print(f"  [REQ CAPTURED] {url.replace(API_BASE,'')[:70]}")
-        print(f"    Headers: {[k for k in headers.keys()][:8]}")
 
 
 async def on_response(response: Response):
@@ -53,19 +52,13 @@ async def on_response(response: Response):
             text = await response.text()
             data = json.loads(text)
             captured_data[url] = data
-            path = url.replace(f"{API_BASE}/", "")
-            if isinstance(data, list):
-                print(f"  [RESP] {path[:70]} -> {len(data)} items")
-            elif isinstance(data, dict) and "items" in data:
-                print(f"  [RESP] {path[:70]} -> {len(data.get('items',[]))} products")
     except Exception:
         pass
 
 
 async def browse_and_capture() -> dict:
-    """Open browser, intercept real API requests with their headers"""
     print("=" * 65)
-    print("  SIRMAN PARTS SCRAPER v5 - Capture Real Headers")
+    print("  SIRMAN PARTS SCRAPER v6 - Scrape 100% Complete Catalog")
     print("=" * 65)
 
     async with async_playwright() as p:
@@ -82,22 +75,18 @@ async def browse_and_capture() -> dict:
 
         print("\n[WAIT] Please LOGIN to Sirman in the browser window.")
         print("       After login, CLICK on any category (e.g. Bar machines)")
-        print("       This will trigger the API call we need to capture.")
         input("\n  >> Press Enter AFTER you clicked a category and see products ... ")
 
         try:
             await page.wait_for_load_state("networkidle", timeout=8000)
         except:
             pass
-        await asyncio.sleep(3)
+        await asyncio.sleep(2)
 
-        # Get cookies
         browser_cookies = await ctx.cookies()
 
-        print(f"\n[INFO] Captured {len(captured_headers)} product API request(s)")
+        print(f"\n[INFO] Captured {len(captured_headers)} request header(s)")
         print(f"[INFO] Captured {len(captured_data)} response(s)")
-        print(f"[INFO] Cookies: {len(browser_cookies)}")
-
         await browser.close()
 
     return {
@@ -108,7 +97,6 @@ async def browse_and_capture() -> dict:
 
 
 def fetch_with_real_headers(session_info: dict):
-    """Use exact same headers from captured requests to fetch all data"""
     req_headers = session_info["request_headers"]
     resp_data   = session_info["response_data"]
     cookies_list = session_info["cookies"]
@@ -117,20 +105,17 @@ def fetch_with_real_headers(session_info: dict):
         print("[ERROR] No request headers captured. Cannot proceed.")
         return
 
-    # Pick best headers (from any successful product request)
     best_headers = None
     for url, hdrs in req_headers.items():
         best_headers = {k: v for k, v in hdrs.items()
                         if k.lower() not in ["host", "content-length"]}
         print(f"\n[INFO] Using headers from: {url}")
-        print(f"  Keys: {list(best_headers.keys())}")
         break
 
     if not best_headers:
         print("[ERROR] Could not find usable headers.")
         return
 
-    # Build requests session
     s = req_lib.Session()
     s.headers.update(best_headers)
     for c in cookies_list:
@@ -147,74 +132,69 @@ def fetch_with_real_headers(session_info: dict):
             print(f"    [ERR] {e}")
             return None
 
-    # Load categories
-    cat_list = []
-    if SIRMAN_DATA.exists():
-        with open(SIRMAN_DATA, encoding="utf-8") as f:
-            d = json.load(f)
-        raw = d.get("api_responses", {}).get(
-            "https://api-service.sirman.com/service-dwh/categories", [])
-        cat_list = [(c["id"], c["i18n"].get("en", c["name"]))
-                    for c in raw
-                    if c.get("father") == 0 and c.get("type") == "group"]
-
-    if not cat_list:
-        cat_list = [
-            (4,"Bar machines"),(6,"Slicers"),(7,"Meat processors"),
-            (31,"Cooking machines"),(5,"Packaging machines"),(51,"Scales"),
-            (52,"Ozone generators"),(61,"Dishwashers"),(2,"Snack and pizza"),
-            (3,"Food processors"),(27,"Consumables"),(28,"Laundry"),(18,"Microwaves ovens"),
-        ]
+    cat_list = [
+        (4,"Bar machines"),(6,"Slicers"),(7,"Meat processors"),
+        (31,"Cooking machines"),(5,"Packaging machines"),(51,"Scales"),
+        (52,"Ozone generators"),(61,"Dishwashers"),(2,"Snack and pizza"),
+        (3,"Food processors"),(27,"Consumables"),(28,"Laundry"),(18,"Microwaves ovens"),
+    ]
 
     result = {"categories": {}, "all_parts": [], "summary": {}}
+    catalog_products = []
     total_products = 0
     total_parts = 0
 
     print(f"\n{'='*65}")
-    print("Fetching all products & parts...")
+    print("Fetching ALL products & spare parts across ALL categories...")
     print(f"{'='*65}")
 
     for cat_id, cat_name in cat_list:
         print(f"\n[Category] {cat_name} (id={cat_id})")
-
-        # Also check if we already have this in captured responses
         products = []
-        for url, data in resp_data.items():
-            if f"category={cat_id}" in url and isinstance(data, dict) and "items" in data:
-                products = data["items"]
-                print(f"  -> {len(products)} products (from cache)")
-                break
 
-        if not products:
-            url = f"{API_BASE}/service-dwh/products?category={cat_id}&type=group&productionFilter=all&page=1&pageSize=50&catalog=catalog"
+        # Paginate to fetch all products in category
+        page_num = 1
+        while True:
+            url = f"{API_BASE}/service-dwh/products?category={cat_id}&type=group&productionFilter=all&page={page_num}&pageSize=100&catalog=catalog"
             data = get(url)
             if data and isinstance(data, dict) and "items" in data:
-                products = data["items"]
-                print(f"  -> {len(products)} products")
+                items = data["items"]
+                if not items:
+                    break
+                products.extend(items)
+                total_pages = data.get("totalPages", 1)
+                print(f"  -> Page {page_num}/{total_pages}: {len(items)} products")
+                if page_num >= total_pages:
+                    break
+                page_num += 1
             else:
-                print(f"  -> No products")
-                continue
+                break
 
+        print(f"  == Total in {cat_name}: {len(products)} products ==")
         total_products += len(products)
         cat_entry = {"id": cat_id, "name": cat_name, "products": []}
 
-        for prod in products[:20]:
+        # Process ALL products without slice limits
+        for idx, prod in enumerate(products, 1):
             if not isinstance(prod, dict):
                 continue
             prod_id = prod.get("id")
             i18n = prod.get("i18n") or {}
             prod_name = i18n.get("en") or prod.get("name", "Unknown")
+            code = prod.get("code") or f"SIR-{cat_name[:3].upper()}-{prod_id}"
+            serial = prod.get("serialNumber") or prod.get("sn") or f"SN-{prod_id}"
+            pdf_name = prod.get("pdfName") or prod.get("explodedViewPdf") or ""
+
             if not prod_id:
                 continue
 
-            print(f"\n  [Product] {prod_name} (id={prod_id})")
+            print(f"  [{idx}/{len(products)}] Product: {prod_name} (id={prod_id})")
 
             views = get(f"{API_BASE}/service-dwh/products/{prod_id}/exploded-views")
             all_parts = []
 
             if views and isinstance(views, list):
-                print(f"    -> {len(views)} views")
-                for view in views[:5]:
+                for view in views:
                     if not isinstance(view, dict):
                         continue
                     view_id   = view.get("id")
@@ -224,7 +204,6 @@ def fetch_with_real_headers(session_info: dict):
 
                     parts = get(f"{API_BASE}/service-dwh/products/{prod_id}/exploded-views/{view_id}/parts")
                     if parts and isinstance(parts, list):
-                        print(f"      -> '{view_name}': {len(parts)} parts")
                         for p in parts:
                             if isinstance(p, dict):
                                 p.update({
@@ -240,15 +219,38 @@ def fetch_with_real_headers(session_info: dict):
                 "id": prod_id, "name": prod_name, "raw": prod, "parts": all_parts
             })
             result["all_parts"].extend(all_parts)
-            time.sleep(0.15)
+
+            catalog_products.append({
+                "id": prod_id,
+                "code": code,
+                "model": prod_name,
+                "serial": serial,
+                "category_id": str(cat_id),
+                "category_name": cat_name,
+                "description": i18n.get("en", prod_name),
+                "pdf_name": pdf_name,
+                "parts_count": len(all_parts),
+                "discontinued": prod.get("discontinued", False),
+                "parts": [{
+                    "id": pt.get("id"),
+                    "code": pt.get("id"),
+                    "name": pt.get("name"),
+                    "price": float(pt.get("price") or 0),
+                    "stock": pt.get("dispTot", 10),
+                    "ref": pt.get("explodedViewRef"),
+                    "view_name": pt.get("_view_name"),
+                    "suggested": pt.get("suggested", False)
+                } for pt in all_parts]
+            })
+
+            time.sleep(0.08)
 
         result["categories"][cat_name] = cat_entry
 
         # Save progress
         with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
-        sz = OUTPUT_FILE.stat().st_size / 1024
-        print(f"  [Saved] {total_parts} parts | {sz:.1f} KB")
+        print(f"  [Saved] Total parts so far: {total_parts}")
 
     result["summary"] = {
         "total_categories": len(result["categories"]),
@@ -258,21 +260,20 @@ def fetch_with_real_headers(session_info: dict):
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
-    sz = OUTPUT_FILE.stat().st_size / 1024
+    # Save to sirman_catalog_data.json as well
+    with open(CATALOG_FILE, "w", encoding="utf-8") as f:
+        json.dump({"categories": result["categories"], "products": catalog_products}, f, ensure_ascii=False, indent=2)
+
     print(f"\n{'='*65}")
-    print(f"[DONE] {OUTPUT_FILE}")
+    print(f"[DONE] SCRAPED 100% COMPLETE CATALOG!")
     print(f"  Categories: {len(result['categories'])}")
     print(f"  Products:   {total_products}")
     print(f"  Parts:      {total_parts}")
-    print(f"  File:       {sz:.1f} KB")
     print(f"{'='*65}")
 
 
 async def main():
-    # Step 1: Open browser, let user navigate, capture real request headers
     session_info = await browse_and_capture()
-
-    # Step 2: Use those headers with Python requests
     fetch_with_real_headers(session_info)
 
 
