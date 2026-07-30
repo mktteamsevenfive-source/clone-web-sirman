@@ -153,20 +153,26 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
         }
     };
 
-    // Helper to extract ref number from element
+    // Helper to extract ref number from element (prefer itemId to preserve 74A, 74B, 75A suffixes)
     const getRefFromElement = (elem: ClickableElement): string => {
-        if (elem.matchedItemId !== undefined) return String(elem.matchedItemId);
         if (elem.itemId) return String(elem.itemId);
+        if (elem.matchedItemId !== undefined) return String(elem.matchedItemId);
         return '';
     };
 
     // Helper to check if ref matches selected or hovered ref
     const isRefMatched = (elemRef: string, targetRef: string | null | undefined): boolean => {
         if (!targetRef || !elemRef) return false;
-        const normElem = elemRef.replace(/^0+/, '');
-        const normTarget = targetRef.replace(/^0+/, '');
-        return normElem === normTarget;
+        const normElem = elemRef.trim().toUpperCase().replace(/^0+/, '');
+        const normTarget = targetRef.trim().toUpperCase().replace(/^0+/, '');
+        if (normElem === normTarget) return true;
+
+        // Also match base number (e.g., 74A matches 74)
+        const baseElem = normElem.replace(/[A-Z]$/, '');
+        const baseTarget = normTarget.replace(/[A-Z]$/, '');
+        return baseElem === baseTarget;
     };
+
 
     // Helper to parse transform matrix coordinates (x, y)
     const parseTransformMatrix = (matrixStr?: string) => {
@@ -373,7 +379,11 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                             const isSelected = isRefMatched(elemRef, selectedRef);
                                             const isHovered = isRefMatched(elemRef, hoveredRef);
                                             const isActive = isSelected || isHovered;
+                                            const isLongRef = elemRef.length > 2;
+                                            const radius = isActive ? (isLongRef ? 19 : 17) : (isLongRef ? 13.5 : 11);
+                                            const fontSz = isActive ? (isLongRef ? 9.5 : 11) : (isLongRef ? 7.5 : 9);
                                             const coords = parseTransformMatrix(elem.transform);
+
 
                                             return (
                                                 <g
@@ -392,7 +402,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                                     <circle
                                                         cx={coords.x}
                                                         cy={coords.y}
-                                                        r={isActive ? 17 : 11}
+                                                        r={radius}
                                                         fill={isActive ? '#C8102E' : 'rgba(37, 99, 235, 0.85)'}
                                                         stroke={isActive ? '#ffffff' : '#ffffff'}
                                                         strokeWidth={isActive ? 2.5 : 1.8}
@@ -411,7 +421,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                                             y="0"
                                                             textAnchor="middle"
                                                             dominantBaseline="central"
-                                                            fontSize={isActive ? 11 : 9}
+                                                            fontSize={fontSz}
                                                             fontWeight="800"
                                                             fill="#ffffff"
                                                             style={{ pointerEvents: 'none', userSelect: 'none' }}
@@ -419,6 +429,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                                             {elemRef}
                                                         </text>
                                                     </g>
+
 
                                                     {/* Hover Tooltip flipped back RIGHT-SIDE UP */}
                                                     {isHovered && (
