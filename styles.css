@@ -2,6 +2,11 @@
    SIRMAN CATALOG CLONE - DESIGN SYSTEM & STYLES
    ========================================================================== */
 
+/* Global HTML5 Hidden Enforcement */
+[hidden] {
+    display: none !important;
+}
+
 :root {
     /* Brand & Color Tokens */
     --color-primary: #C8102E;         /* Sirman Signature Red */
