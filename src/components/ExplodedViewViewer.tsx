@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ProductData } from '@/lib/data';
 import { SUPABASE_CDN_BASE } from '@/lib/supabase';
-import { ZoomIn, ZoomOut, FileText, Target } from 'lucide-react';
+import { ZoomIn, ZoomOut, FileText, Target, Hand, RotateCcw } from 'lucide-react';
 
 interface ClickableElement {
     itemId: string;
@@ -33,14 +33,53 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
     onSelectPartRef,
 }) => {
     const [zoom, setZoom] = useState(1.0);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+    const [isSpacePressed, setIsSpacePressed] = useState(false);
+    const [isHandMode, setIsHandMode] = useState(false);
+
     const [imgError, setImgError] = useState(false);
     const [hotspotData, setHotspotData] = useState<HotspotData | null>(null);
     const [hoveredRef, setHoveredRef] = useState<string | null>(null);
 
-    const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 3.0));
-    const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.25));
-    const handleZoomReset = () => setZoom(1.0);
+    const viewportRef = useRef<HTMLDivElement>(null);
 
+    // Zoom handlers
+    const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 4.0));
+    const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.25));
+    const handleReset = () => {
+        setZoom(1.0);
+        setPan({ x: 0, y: 0 });
+    };
+
+    // Spacebar listener for Photoshop-style pan mode
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+                e.preventDefault();
+                setIsSpacePressed(true);
+            }
+        };
+
+        const handleKeyUp = (e: KeyboardEvent) => {
+            if (e.code === 'Space') {
+                setIsSpacePressed(false);
+                setIsDragging(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+        };
+    }, []);
+
+    // Load Hotspot JSON
     const pdfFilename = product.pdf_name || (product as any).pdfName;
     const cleanPdfName = pdfFilename ? pdfFilename.replace('.pdf', '').replace('.png', '') : '';
     
@@ -48,7 +87,6 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
         ? `${SUPABASE_CDN_BASE}/${pdfFilename}.png`
         : null;
 
-    // Load Hotspot JSON
     useEffect(() => {
         if (!cleanPdfName) {
             setHotspotData(null);
@@ -77,6 +115,43 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
     }, [cleanPdfName]);
 
     const VIEWPORT_HEIGHT = 520;
+
+    // Pan Drag handlers
+    const canPan = isSpacePressed || isHandMode || zoom > 1.0;
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (canPan || e.button === 1) { // Left click in pan mode OR middle click
+            e.preventDefault();
+            setIsDragging(true);
+            setDragStart({ x: e.clientX, y: e.clientY });
+            setPanStart({ x: pan.x, y: pan.y });
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isDragging) {
+            e.preventDefault();
+            const dx = e.clientX - dragStart.x;
+            const dy = e.clientY - dragStart.y;
+            setPan({
+                x: panStart.x + dx,
+                y: panStart.y + dy,
+            });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    // Wheel zoom
+    const handleWheel = (e: React.WheelEvent) => {
+        if (e.ctrlKey || e.metaKey || canPan) {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.15 : -0.15;
+            setZoom((prev) => Math.min(Math.max(prev + delta, 0.25), 4.0));
+        }
+    };
 
     // Helper to extract ref number from element
     const getRefFromElement = (elem: ClickableElement): string => {
@@ -139,7 +214,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                 justifyContent: 'space-between',
                 gap: '0.5rem',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {pdfFilename && (
                         <span style={{
                             display: 'inline-flex',
@@ -175,43 +250,86 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                             {hotspotData.clickableElements.length} Interactive Hotspots
                         </span>
                     )}
+
+                    {/* Spacebar Indicator */}
+                    {isSpacePressed && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-md animate-pulse">
+                            <Hand className="w-3.5 h-3.5 text-amber-600" /> Spacebar Pan Mode
+                        </span>
+                    )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    {/* Hand Tool Toggle Button */}
+                    <button
+                        onClick={() => setIsHandMode(!isHandMode)}
+                        title="Hand Pan Tool (Hold Spacebar)"
+                        style={{
+                            padding: '0.375rem 0.5rem',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            background: isHandMode || isSpacePressed ? '#fee2e2' : '#fff',
+                            color: isHandMode || isSpacePressed ? '#c8102e' : '#475569',
+                            border: isHandMode || isSpacePressed ? '1px solid #fca5a5' : '1px solid #e2e8f0',
+                            borderRadius: '0.5rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            transition: 'all 0.15s ease',
+                        }}
+                    >
+                        <Hand style={{ width: '0.875rem', height: '0.875rem' }} />
+                        Hand Mode
+                    </button>
+
+                    <div className="h-4 w-px bg-slate-200 mx-0.5" />
+
                     <button onClick={handleZoomIn} title="Zoom In" style={{ padding: '0.375rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', cursor: 'pointer', display: 'flex' }}>
                         <ZoomIn style={{ width: '1rem', height: '1rem' }} />
                     </button>
                     <button onClick={handleZoomOut} title="Zoom Out" style={{ padding: '0.375rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', cursor: 'pointer', display: 'flex' }}>
                         <ZoomOut style={{ width: '1rem', height: '1rem' }} />
                     </button>
-                    <button onClick={handleZoomReset} title="Reset" style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', fontWeight: 700, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', cursor: 'pointer' }}>
+                    <button onClick={handleReset} title="Reset Zoom & Pan" style={{ padding: '0.25rem 0.625rem', fontSize: '0.75rem', fontWeight: 700, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.5rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <RotateCcw style={{ width: '0.75rem', height: '0.75rem' }} />
                         RESET
                     </button>
                 </div>
             </div>
 
-            {/* Diagram Viewport */}
-            <div style={{
-                position: 'relative',
-                width: '100%',
-                height: `${VIEWPORT_HEIGHT}px`,
-                overflow: 'hidden',
-                background: '#f8fafc',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}>
-                {/* Scale wrapper */}
+            {/* Diagram Viewport Container */}
+            <div
+                ref={viewportRef}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onWheel={handleWheel}
+                style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: `${VIEWPORT_HEIGHT}px`,
+                    overflow: 'hidden',
+                    background: '#f8fafc',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: isDragging ? 'grabbing' : canPan ? 'grab' : 'default',
+                    userSelect: 'none',
+                }}
+            >
+                {/* Scale and Pan Transform Wrapper */}
                 <div style={{
-                    transform: `scale(${zoom})`,
+                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                     transformOrigin: 'center center',
-                    transition: 'transform 0.18s ease-out',
+                    transition: isDragging ? 'none' : 'transform 0.1s ease-out',
                     width: '100%',
                     height: '100%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative',
-                    overflow: 'hidden',
                 }}>
                     {realDiagramImageUrl && !imgError ? (
                         <div style={{
@@ -232,6 +350,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                     height: 'auto',
                                     objectFit: 'contain',
                                     userSelect: 'none',
+                                    pointerEvents: 'none',
                                 }}
                             />
 
@@ -261,7 +380,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                                     key={idx}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (elemRef && onSelectPartRef) {
+                                                        if (elemRef && onSelectPartRef && !isDragging) {
                                                             onSelectPartRef(elemRef);
                                                         }
                                                     }}
@@ -269,52 +388,58 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                                     onMouseLeave={() => setHoveredRef(null)}
                                                     style={{ cursor: 'pointer' }}
                                                 >
-                                                    {/* Custom rendered interactive hotspot circle */}
+                                                    {/* Outer Ring & Circle */}
                                                     <circle
                                                         cx={coords.x}
                                                         cy={coords.y}
-                                                        r={isActive ? 16 : 11}
-                                                        fill={isActive ? '#C8102E' : 'rgba(29, 78, 216, 0.18)'}
-                                                        stroke={isActive ? '#ffffff' : '#1d4ed8'}
-                                                        strokeWidth={isActive ? 2.5 : 1.5}
+                                                        r={isActive ? 17 : 11}
+                                                        fill={isActive ? '#C8102E' : 'rgba(37, 99, 235, 0.85)'}
+                                                        stroke={isActive ? '#ffffff' : '#ffffff'}
+                                                        strokeWidth={isActive ? 2.5 : 1.8}
                                                         style={{
                                                             transition: 'all 0.15s ease',
-                                                            filter: isActive ? 'drop-shadow(0 2px 4px rgba(200,16,46,0.5))' : 'none',
+                                                            filter: isActive
+                                                                ? 'drop-shadow(0 3px 6px rgba(200,16,46,0.6))'
+                                                                : 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))',
                                                         }}
                                                     />
-                                                    <text
-                                                        x={coords.x}
-                                                        y={coords.y}
-                                                        textAnchor="middle"
-                                                        dominantBaseline="central"
-                                                        fontSize={isActive ? 10 : 8}
-                                                        fontWeight="bold"
-                                                        fill={isActive ? '#ffffff' : '#1e293b'}
-                                                        style={{ pointerEvents: 'none', userSelect: 'none' }}
-                                                    >
-                                                        {elemRef}
-                                                    </text>
 
-                                                    {/* Tooltip on hover */}
+                                                    {/* Text flipped back RIGHT-SIDE UP */}
+                                                    <g transform={`translate(${coords.x}, ${coords.y}) scale(1, -1)`}>
+                                                        <text
+                                                            x="0"
+                                                            y="0"
+                                                            textAnchor="middle"
+                                                            dominantBaseline="central"
+                                                            fontSize={isActive ? 11 : 9}
+                                                            fontWeight="800"
+                                                            fill="#ffffff"
+                                                            style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                                        >
+                                                            {elemRef}
+                                                        </text>
+                                                    </g>
+
+                                                    {/* Hover Tooltip flipped back RIGHT-SIDE UP */}
                                                     {isHovered && (
-                                                        <g transform={`translate(${coords.x + 18}, ${coords.y - 12})`}>
+                                                        <g transform={`translate(${coords.x + 18}, ${coords.y - 12}) scale(1, -1)`}>
                                                             <rect
                                                                 x="0"
-                                                                y="0"
-                                                                width={Math.max(120, getPartNameForRef(elemRef).length * 7)}
-                                                                height="24"
+                                                                y="-20"
+                                                                width={Math.max(130, getPartNameForRef(elemRef).length * 7)}
+                                                                height="26"
                                                                 rx="6"
                                                                 fill="#0f172a"
-                                                                opacity="0.9"
+                                                                opacity="0.95"
                                                             />
                                                             <text
                                                                 x="8"
-                                                                y="15"
-                                                                fontSize="9"
+                                                                y="-4"
+                                                                fontSize="10"
                                                                 fontWeight="600"
                                                                 fill="#ffffff"
                                                             >
-                                                                Ref #{elemRef}: {getPartNameForRef(elemRef).slice(0, 20)}
+                                                                Ref #{elemRef}: {getPartNameForRef(elemRef).slice(0, 22)}
                                                             </text>
                                                         </g>
                                                     )}
