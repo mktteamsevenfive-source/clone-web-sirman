@@ -13,27 +13,41 @@ let currentActiveProduct = null;
 let currentZoomScale = 1.0;
 let isDataLoaded = false;
 
-// DOM Initialization
-document.addEventListener("DOMContentLoaded", () => {
-    if (window.lucide) {
-        lucide.createIcons();
-    }
-
-    loadRealCatalogData();
-    setupEventListeners();
-    setupExplodedViewListeners();
-});
-
 let supabaseClient = null;
 
-if (window.supabase && window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && !window.SUPABASE_CONFIG.url.includes("YOUR_SUPABASE_URL")) {
-    try {
-        supabaseClient = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
-        console.log("Supabase client initialized successfully!");
-    } catch (e) {
-        console.warn("Supabase init notice:", e);
+// DOM Initialization
+document.addEventListener("DOMContentLoaded", () => {
+    // Initialize Supabase client inside DOMContentLoaded for correct load order
+    if (window.supabase && window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) {
+        try {
+            supabaseClient = window.supabase.createClient(
+                window.SUPABASE_CONFIG.url,
+                window.SUPABASE_CONFIG.anonKey
+            );
+            console.log("[Supabase] Client initialized OK");
+        } catch (e) {
+            console.warn("[Supabase] Init failed:", e);
+        }
+    } else {
+        console.warn("[Supabase] SDK or config not found, will fallback to JSON");
     }
-}
+
+    if (window.lucide) lucide.createIcons();
+
+    loadRealCatalogData();
+
+    try {
+        setupEventListeners();
+    } catch(e) {
+        console.error("[setupEventListeners] Error:", e);
+    }
+
+    try {
+        setupExplodedViewListeners();
+    } catch(e) {
+        console.error("[setupExplodedViewListeners] Error:", e);
+    }
+});
 
 /**
  * Fetch and load real scraped catalog data
