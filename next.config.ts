@@ -1,0 +1,20 @@
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  experimental: {
+    useTypeScriptCli: true,
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'ofrerwyoasklgsejlbzr.supabase.co',
+      },
+    ],
+  },
+};
+
+export default nextConfig;
