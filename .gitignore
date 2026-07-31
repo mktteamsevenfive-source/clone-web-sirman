@@ -23,3 +23,6 @@ sirman_catalog.db
 *.db
 diagram_images/
 public/hotspots/
+exports/
+*.csv
+
