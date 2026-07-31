@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { CategoryData } from '@/lib/data';
+import { Layers, Filter, Check } from 'lucide-react';
 
 interface SidebarProps {
     categories: CategoryData[];
@@ -23,31 +24,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onStatusFilterChange,
 }) => {
     return (
-        <aside className="w-full lg:w-60 flex-shrink-0 space-y-6">
-            {/* Categories Section */}
+        <aside className="w-full lg:w-64 flex-shrink-0 space-y-5 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm">
+            {/* Categories Section Header */}
             <div>
-                <h2 className="text-sm font-bold text-slate-900 tracking-tight mb-3">
-                    Categories
-                </h2>
-                <ul className="space-y-1">
+                <div className="flex items-center justify-between mb-3 px-1">
+                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-[#C8102E]" />
+                        Categories
+                    </h2>
+                    {selectedCategory && (
+                        <button
+                            onClick={() => onSelectCategory(null)}
+                            className="text-[11px] font-semibold text-[#C8102E] hover:underline"
+                        >
+                            Reset
+                        </button>
+                    )}
+                </div>
+
+                <ul className="space-y-1 max-h-[420px] overflow-y-auto pr-1">
                     {categories.map((cat) => {
                         const isSelected = selectedCategory?.id === cat.id;
                         return (
                             <li key={cat.id}>
                                 <button
                                     onClick={() => onSelectCategory(isSelected ? null : cat)}
-                                    className={`w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg transition-all text-left ${
+                                    className={`w-full flex items-center justify-between text-xs py-2 px-2.5 rounded-xl transition-all text-left group cursor-pointer ${
                                         isSelected
-                                            ? 'bg-red-50 text-[#C8102E] font-semibold border-l-2 border-[#C8102E]'
-                                            : 'text-slate-600 hover:text-[#C8102E] hover:bg-slate-100/60'
+                                            ? 'bg-red-50 text-[#C8102E] font-bold shadow-sm ring-1 ring-red-200'
+                                            : 'text-slate-700 hover:text-[#C8102E] hover:bg-slate-50'
                                     }`}
                                 >
                                     <span className="truncate pr-2">{cat.name}</span>
                                     <span
-                                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono flex-shrink-0 ${
+                                        className={`text-[10px] px-2 py-0.5 rounded-full font-mono flex-shrink-0 transition-colors ${
                                             isSelected
-                                                ? 'bg-red-100 text-[#C8102E]'
-                                                : 'bg-slate-100 text-slate-400'
+                                                ? 'bg-[#C8102E] text-white font-bold'
+                                                : 'bg-slate-100 text-slate-500 group-hover:bg-red-100 group-hover:text-[#C8102E]'
                                         }`}
                                     >
                                         {cat.count}
@@ -59,13 +72,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </ul>
             </div>
 
-            <div className="border-t border-slate-200" />
+            <div className="border-t border-slate-100" />
 
-            {/* See Your Catalog Toggle */}
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-800">
-                    See your catalog
-                </span>
+            {/* Custom Catalog Toggle */}
+            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 flex items-center justify-between">
+                <div>
+                    <span className="text-xs font-bold text-slate-800 block">
+                        See your catalog
+                    </span>
+                    <span className="text-[10px] text-slate-400 block">
+                        Filter tailored equipment
+                    </span>
+                </div>
                 <button
                     type="button"
                     onClick={() => onToggleUserCatalog(!userCatalogToggle)}
@@ -81,40 +99,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
             </div>
 
-            <div className="border-t border-slate-200" />
+            <div className="border-t border-slate-100" />
 
-            {/* Status Radio Filters */}
-            <div className="space-y-2">
-                {[
-                    { id: 'all', label: 'All' },
-                    { id: 'in_production', label: 'In production' },
-                    { id: 'out_of_production', label: 'Out of production' },
-                ].map((item) => (
-                    <label
-                        key={item.id}
-                        className="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer hover:text-slate-900 select-none"
-                    >
-                        <input
-                            type="radio"
-                            name="statusFilter"
-                            checked={statusFilter === item.id}
-                            onChange={() => onStatusFilterChange(item.id as any)}
-                            className="sr-only"
-                        />
-                        <div
-                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                                statusFilter === item.id
-                                    ? 'border-[#0284C7] bg-white'
-                                    : 'border-slate-300 hover:border-slate-400'
-                            }`}
-                        >
-                            {statusFilter === item.id && (
-                                <div className="w-2 h-2 rounded-full bg-[#0284C7]" />
-                            )}
-                        </div>
-                        <span>{item.label}</span>
-                    </label>
-                ))}
+            {/* Production Status Filter - Modern Segmented Controls */}
+            <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 px-1 flex items-center gap-1.5">
+                    <Filter className="w-3.5 h-3.5 text-[#0284C7]" />
+                    Production Status
+                </h3>
+
+                <div className="bg-slate-100 p-1 rounded-xl flex flex-col gap-1">
+                    {[
+                        { id: 'all', label: 'All Statuses' },
+                        { id: 'in_production', label: 'In Production' },
+                        { id: 'out_of_production', label: 'Discontinued' },
+                    ].map((item) => {
+                        const active = statusFilter === item.id;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => onStatusFilterChange(item.id as any)}
+                                className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                                    active
+                                        ? 'bg-white text-slate-900 font-bold shadow-sm'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                                }`}
+                            >
+                                <span>{item.label}</span>
+                                {active && <Check className="w-3.5 h-3.5 text-[#0284C7]" />}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         </aside>
     );

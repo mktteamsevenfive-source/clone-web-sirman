@@ -7,9 +7,9 @@ import { CategoryCard } from '@/components/CategoryCard';
 import { ProductTable } from '@/components/ProductTable';
 import { ExplodedViewViewer } from '@/components/ExplodedViewViewer';
 import { PartsTable } from '@/components/PartsTable';
-import { CategoryData, ProductData, FALLBACK_CATEGORIES, FALLBACK_PRODUCTS, getRealPartsForProduct } from '@/lib/data';
+import { CategoryData, ProductData, PartData, FALLBACK_CATEGORIES, FALLBACK_PRODUCTS, getRealPartsForProduct, deduplicateCategories, cleanText } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
-import { ChevronLeft, Loader2, X, SearchX } from 'lucide-react';
+import { ChevronLeft, Loader2, X, SearchX, ShoppingBag, Trash2, Send, CheckCircle } from 'lucide-react';
 
 export default function Home() {
     const [categories, setCategories] = useState<CategoryData[]>(FALLBACK_CATEGORIES);
@@ -25,6 +25,9 @@ export default function Home() {
     const [userCatalogToggle, setUserCatalogToggle] = useState(false);
     const [selectedRef, setSelectedRef] = useState<string | null>(null);
 
+    // Cart state
+    const [cart, setCart] = useState<{ part: PartData; quantity: number }[]>([]);
+    const [inquirySent, setInquirySent] = useState(false);
 
     // Fetch initial categories and products from Supabase Cloud PostgreSQL
     useEffect(() => {
@@ -62,22 +65,24 @@ export default function Home() {
                     const fallbackMap: Record<string, string> = {};
                     FALLBACK_CATEGORIES.forEach(c => { fallbackMap[c.id] = c.icon; });
 
-                    const mappedCats: CategoryData[] = catData.map((c: any) => ({
+                    const mappedCats: CategoryData[] = deduplicateCategories(catData.map((c: any) => ({
                         ...c,
+                        name: cleanText(c.name),
                         icon: c.icon || fallbackMap[c.id] || `<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="30"/></svg>`
-                    }));
+                    })));
                     setCategories(mappedCats);
 
-                    // Debug: log category ids
-                    console.log('[Sirman] Category IDs:', mappedCats.map(c => c.id));
+                    console.log('[Sirman] Normalized Category IDs:', mappedCats.map(c => c.id));
                 }
 
                 if (allProdData.length > 0) {
                     const mappedProds: ProductData[] = allProdData.map((p: any) => ({
                         ...p,
+                        model: cleanText(p.model),
+                        description: cleanText(p.description),
                         category_id: p.category_id || p.categoryId,
-                        category_name: p.category_name || p.categoryName || p.category,
-                        category: p.category_name || p.categoryName || p.category,
+                        category_name: cleanText(p.category_name || p.categoryName || p.category),
+                        category: cleanText(p.category_name || p.categoryName || p.category),
                         pdf_name: p.pdf_name || p.pdfName,
                         exploded_view_id: p.exploded_view_id || p.explodedViewId,
                         parts_count: p.parts_count !== undefined ? p.parts_count : (p.partsCount || 0),
@@ -85,10 +90,6 @@ export default function Home() {
                         parts: []
                     }));
                     setProducts(mappedProds);
-
-                    // Debug: show unique category_ids from products
-                    const uniqueCatIds = [...new Set(mappedProds.map(p => p.category_id))];
-                    console.log('[Sirman] Unique product category_ids:', uniqueCatIds);
                 }
             } catch (err) {
                 console.warn("Supabase fetch notice, using cached Sirman data:", err);
@@ -99,15 +100,37 @@ export default function Home() {
         loadData();
     }, []);
 
+    // Add to cart helper
+    const handleAddToCart = (part: PartData) => {
+        setCart((prev) => {
+            const existingIndex = prev.findIndex((item) => item.part.code === part.code);
+            if (existingIndex > -1) {
+                const updated = [...prev];
+                updated[existingIndex] = {
+                    ...updated[existingIndex],
+                    quantity: updated[existingIndex].quantity + 1,
+                };
+                return updated;
+            }
+            return [...prev, { part, quantity: 1 }];
+        });
+    };
+
+    // Calculate cart totals
+    const cartItemCount = cart.reduce((sum, i) => sum + i.quantity, 0);
+    const cartTotalPrice = cart.reduce((sum, i) => sum + (i.part.price || 14.5) * i.quantity, 0);
+    const cartCountMap: Record<string, number> = {};
+    cart.forEach((i) => {
+        cartCountMap[i.part.code] = i.quantity;
+    });
+
     // Handle selecting a product & fetching its real model-specific spare parts
     const handleSelectProduct = async (prod: ProductData) => {
-        // First set product with exact real parts for this model
         const modelParts = getRealPartsForProduct(prod.id, prod.code);
         setSelectedProduct({ ...prod, parts: modelParts });
         setPartsLoading(true);
 
         try {
-            // Also fetch from Supabase 'parts' table for live prices & stock
             const { data: partsData, error } = await supabase
                 .from('parts')
                 .select('*')
@@ -186,7 +209,7 @@ export default function Home() {
     });
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] flex flex-col text-slate-900 font-sans">
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col text-slate-900 font-sans pb-24">
             {/* Navbar Header */}
             <Navbar
                 searchQuery={searchQuery}
@@ -209,16 +232,16 @@ export default function Home() {
                     /* EXPLODED VIEW WORKSPACE */
                     <div className="space-y-6 animate-fade-in">
                         {/* Header Breadcrumb */}
-                        <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => setSelectedProduct(null)}
-                                    className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#C8102E] bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+                                    className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#C8102E] bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-2xs"
                                 >
                                     <ChevronLeft className="w-4 h-4" /> Back to Catalog
                                 </button>
                                 <div>
-                                    <h1 className="text-xl font-bold text-slate-900">
+                                    <h1 className="text-xl font-extrabold text-slate-900">
                                         {selectedProduct.model}
                                     </h1>
                                     <p className="text-xs text-slate-500 font-mono mt-0.5">
@@ -243,10 +266,11 @@ export default function Home() {
                                     loading={partsLoading}
                                     selectedRef={selectedRef}
                                     onSelectPartRef={(ref) => setSelectedRef((prev) => (prev === ref ? null : ref))}
+                                    cartCountMap={cartCountMap}
+                                    onAddToCart={handleAddToCart}
                                 />
                             </div>
                         </div>
-
                     </div>
                 ) : (
                     /* MAIN CATALOG VIEW (Sidebar + Category Grid or Products Table) */
@@ -271,7 +295,7 @@ export default function Home() {
                                 </h1>
 
                                 {(searchQuery || selectedCategory || statusFilter !== 'all') && (
-                                    <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-[#0284C7] px-3 py-1 rounded-full text-xs font-semibold">
+                                    <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-[#0284C7] px-3.5 py-1.5 rounded-full text-xs font-bold shadow-2xs">
                                         <span>
                                             {selectedCategory
                                                 ? `Category: ${selectedCategory.name}`
@@ -316,17 +340,17 @@ export default function Home() {
                                                 setSelectedCategory(null);
                                                 setSearchQuery('');
                                             }}
-                                            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-[#C8102E] transition-colors cursor-pointer"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 hover:text-[#C8102E] transition-colors cursor-pointer"
                                         >
                                             <ChevronLeft className="w-4 h-4" /> Back to Categories
                                         </button>
-                                        <span className="text-xs text-slate-500 font-mono">
+                                        <span className="text-xs text-slate-500 font-mono font-semibold">
                                             {displayProducts.length} model(s) found
                                         </span>
                                     </div>
 
                                     {displayProducts.length === 0 ? (
-                                        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
+                                        <div className="bg-white border border-slate-200/80 rounded-2xl p-12 text-center shadow-xs">
                                             <SearchX className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                                             <h3 className="font-bold text-slate-800 text-sm mb-1">
                                                 No machine models match your criteria
@@ -347,6 +371,57 @@ export default function Home() {
                     </div>
                 )}
             </main>
+
+            {/* STICKY CART SUMMARY BAR */}
+            {cart.length > 0 && (
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-2xl bg-slate-900/95 backdrop-blur-md text-white border border-slate-700/80 rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4 animate-slide-up">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[#C8102E] rounded-xl flex items-center justify-center font-bold text-white relative shadow-sm">
+                            <ShoppingBag className="w-5 h-5" />
+                            <span className="absolute -top-1.5 -right-1.5 bg-white text-[#C8102E] text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">
+                                {cartItemCount}
+                            </span>
+                        </div>
+                        <div>
+                            <div className="text-xs font-extrabold text-white flex items-center gap-2">
+                                Spare Parts Order ({cartItemCount} item{cartItemCount > 1 ? 's' : ''})
+                            </div>
+                            <div className="text-xs text-slate-400 font-mono">
+                                Total: <span className="text-emerald-400 font-extrabold text-sm">€{cartTotalPrice.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCart([])}
+                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                            title="Clear cart"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => {
+                                setInquirySent(true);
+                                setTimeout(() => setInquirySent(false), 3000);
+                            }}
+                            className="inline-flex items-center gap-2 bg-[#C8102E] hover:bg-[#A00C24] text-white text-xs font-extrabold px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                        >
+                            {inquirySent ? (
+                                <>
+                                    <CheckCircle className="w-4 h-4 text-emerald-300" />
+                                    Inquiry Sent!
+                                </>
+                            ) : (
+                                <>
+                                    <Send className="w-4 h-4" />
+                                    Send Inquiry
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

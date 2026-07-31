@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Home as HomeIcon, BookOpen } from 'lucide-react';
 
 interface NavbarProps {
     searchQuery: string;
@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     onBrandClick,
 }) => {
     return (
-        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
             {/* Top Header Row */}
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16 gap-4">
@@ -33,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <span className="font-heading text-2xl sm:text-3xl font-extrabold text-[#C8102E] tracking-tight group-hover:opacity-90 transition-opacity">
                             SIRMAN
                         </span>
-                        <span className="bg-red-50 text-[#C8102E] border border-red-100 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                        <span className="bg-red-50 text-[#C8102E] border border-red-100 text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider shadow-2xs">
                             SERVICE
                         </span>
                     </div>
@@ -46,13 +46,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => onSearchChange(e.target.value)}
-                                placeholder="Search part codes or serial number..."
-                                className="w-full bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-900 placeholder:text-slate-400 text-sm rounded-xl pl-10 pr-10 py-2 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#C8102E]/20 focus:border-[#C8102E] transition-all shadow-inner"
+                                placeholder="Search part codes, serial number or model..."
+                                className="w-full bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-900 placeholder:text-slate-400 text-sm rounded-xl pl-10 pr-10 py-2 border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-[#C8102E]/20 focus:border-[#C8102E] transition-all shadow-inner"
                             />
                             {searchQuery.trim() !== '' && (
                                 <button
                                     onClick={onClearSearch}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-full transition-colors"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-full transition-colors cursor-pointer"
                                     title="Clear search"
                                 >
                                     <X className="w-3.5 h-3.5" />
@@ -64,27 +64,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             {/* Sub-Header Navigation */}
-            <div className="bg-[#324050] text-white border-t border-slate-700/50">
+            <div className="bg-[#0F172A] text-white border-t border-slate-800">
                 <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-                    <nav className="flex space-x-1 text-sm font-medium">
+                    <nav className="flex space-x-2 text-sm font-medium py-1.5">
                         <button
                             onClick={() => onTabChange('home')}
-                            className={`px-5 py-3 relative transition-all ${
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 activeTab === 'home'
-                                    ? 'text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-white'
-                                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                                    ? 'bg-[#C8102E] text-white shadow-sm'
+                                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                             }`}
                         >
+                            <HomeIcon className="w-3.5 h-3.5" />
                             Home
                         </button>
                         <button
                             onClick={() => onTabChange('catalog')}
-                            className={`px-5 py-3 relative transition-all ${
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 activeTab === 'catalog'
-                                    ? 'text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-white'
-                                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                                    ? 'bg-[#C8102E] text-white shadow-sm'
+                                    : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                             }`}
                         >
+                            <BookOpen className="w-3.5 h-3.5" />
                             Catalog
                         </button>
                     </nav>
