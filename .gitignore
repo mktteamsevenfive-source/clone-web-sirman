@@ -14,3 +14,12 @@ _temp_*
 
 # Media cache
 public/exploded-views/
+
+# Large data files (ข้อมูลอยู่บน Supabase แล้ว ไม่ต้องเก็บใน Git)
+sirman_catalog_data.json
+sirman_parts.json
+sirman_data.json
+sirman_catalog.db
+*.db
+diagram_images/
+public/hotspots/
