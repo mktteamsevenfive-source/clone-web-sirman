@@ -20,7 +20,7 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "requests"], check=True)
     import requests
 
-BASE_DIR        = Path(__file__).parent
+BASE_DIR        = Path(__file__).resolve().parent.parent.parent
 CATALOG_FILE    = BASE_DIR / "sirman_catalog_data.json"
 HEADERS_FILE    = BASE_DIR / "sirman_headers.json"
 HOTSPOTS_DIR    = BASE_DIR / "public" / "hotspots"

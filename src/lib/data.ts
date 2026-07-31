@@ -1,5 +1,4 @@
 import fallbackCatalog from '../../sirman_catalog_data.json';
-import sirmanPartsRaw from '../../sirman_parts.json';
 
 export interface CategoryData {
     id: string;
@@ -36,38 +35,13 @@ export interface ProductData {
     status?: 'in_production' | 'out_of_production';
 }
 
-// Build map of suggested parts from sirman_parts.json
 export const SUGGESTED_PARTS_MAP = new Set<string>();
-const rawAllPartsList = (sirmanPartsRaw as any).all_parts || [];
 
-rawAllPartsList.forEach((pt: any) => {
-    if (pt.suggested) {
-        const key = `${pt._product_id}_${pt.id}`;
-        SUGGESTED_PARTS_MAP.add(key);
-        if (pt.code) SUGGESTED_PARTS_MAP.add(pt.code);
-    }
-});
-
-// Helper function to retrieve 100% exact real spare parts for ANY given machine model ID
+// Helper function to retrieve fallback spare parts for machine model ID
 export function getRealPartsForProduct(productId: number | string, productCode?: string): PartData[] {
     const pIdNum = Number(productId);
 
-    // 1. Search in sirman_parts.json by _product_id
-    const matchedRaw = rawAllPartsList.filter((pt: any) => Number(pt._product_id) === pIdNum);
-    if (matchedRaw && matchedRaw.length > 0) {
-        return matchedRaw.map((pt: any) => ({
-            id: pt.id,
-            code: pt.id || pt.code,
-            name: pt.name,
-            price: typeof pt.price === 'string' ? parseFloat(pt.price) : (pt.price || 0),
-            stock: pt.dispTot !== undefined ? pt.dispTot : (pt.stock || 10),
-            ref: pt.explodedViewRef || pt.ref,
-            view_name: pt._view_name || pt.view_name,
-            suggested: Boolean(pt.suggested)
-        }));
-    }
-
-    // 2. Search in sirman_catalog_data.json fallback
+    // Search in sirman_catalog_data.json fallback
     const fallbackProds = (fallbackCatalog.products || []) as any[];
     const fallbackProd = fallbackProds.find(
         (p) => Number(p.id) === pIdNum || p.code === productCode

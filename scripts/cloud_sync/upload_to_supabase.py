@@ -30,11 +30,11 @@ HEADERS = {
     "Prefer": "resolution=merge-duplicates",  # upsert - skip duplicates
 }
 
-BASE_DIR     = Path(__file__).parent
+BASE_DIR     = Path(__file__).resolve().parent.parent.parent
 CATALOG_FILE = BASE_DIR / "sirman_catalog_data.json"
 PARTS_FILE   = BASE_DIR / "sirman_parts.json"
 
-BATCH_SIZE = 200  # rows per API call
+BATCH_SIZE = 500  # rows per API call
 
 
 def fetch_category_map() -> dict[str, str]:
@@ -75,7 +75,8 @@ def upload_table(table: str, rows: list, id_field: str = "id"):
         done = min(i + BATCH_SIZE, total)
         elapsed = time.time() - start
         rate = done / elapsed if elapsed > 0 else 0
-        print(f"  [{done}/{total}] OK {success} uploaded | {rate:.0f} rows/s")
+        pct = (done / total) * 100
+        print(f"  [{done}/{total}] {pct:5.1f}% | OK {success} uploaded | {rate:.0f} rows/s")
 
     print(f"  Done: {success}/{total} rows uploaded to '{table}'")
 
@@ -91,7 +92,7 @@ def main():
 
     # 2. Load catalog products
     if not CATALOG_FILE.exists():
-        print(f"[ERROR] {CATALOG_FILE.name} not found. Run scrape_with_browser.py first!")
+        print(f"[ERROR] {CATALOG_FILE.name} not found.")
         sys.exit(1)
 
     catalog = json.load(open(CATALOG_FILE, encoding="utf-8"))
@@ -100,7 +101,7 @@ def main():
 
     # 3. Load parts
     if not PARTS_FILE.exists():
-        print(f"[ERROR] {PARTS_FILE.name} not found. Run scrape_with_browser.py first!")
+        print(f"[ERROR] {PARTS_FILE.name} not found.")
         sys.exit(1)
 
     parts_data = json.load(open(PARTS_FILE, encoding="utf-8"))
@@ -118,7 +119,7 @@ def main():
         product_rows.append({
             "id": p.get("id"),
             "code": p.get("code") or "",
-            "model": p.get("model") or "",
+            "model": p.get("model") or p.get("name") or "",
             "serial": p.get("serial") or "",
             "category_id": slug_cat_id,
             "category_name": p.get("category_name") or "",
@@ -132,8 +133,8 @@ def main():
     seen_part_keys = set()
     parts_rows = []
     for pt in all_raw_parts:
-        pt_id = pt.get("id") or pt.get("code")
-        prod_id = pt.get("_product_id")
+        pt_id = pt.get("code") or pt.get("id")
+        prod_id = pt.get("product_id") or pt.get("_product_id")
         if not pt_id or not prod_id:
             continue
 

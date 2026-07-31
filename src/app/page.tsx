@@ -32,7 +32,31 @@ export default function Home() {
             setLoading(true);
             try {
                 const { data: catData, error: catErr } = await supabase.from('categories').select('*').order('name');
-                const { data: prodData, error: prodErr } = await supabase.from('products').select('*').order('model');
+
+                // Paginate products to bypass Supabase 1000-row default limit
+                const PAGE_SIZE = 1000;
+                let allProdData: any[] = [];
+                let page = 0;
+                let keepFetching = true;
+                while (keepFetching) {
+                    const from = page * PAGE_SIZE;
+                    const to = from + PAGE_SIZE - 1;
+                    const { data: batch, error } = await supabase
+                        .from('products')
+                        .select('*')
+                        .range(from, to)
+                        .order('model');
+                    if (error || !batch || batch.length === 0) {
+                        keepFetching = false;
+                    } else {
+                        allProdData = allProdData.concat(batch);
+                        if (batch.length < PAGE_SIZE) keepFetching = false;
+                        page++;
+                    }
+                }
+
+                console.log('[Sirman] Categories loaded:', catData?.length);
+                console.log('[Sirman] Products loaded:', allProdData.length);
 
                 if (!catErr && catData && catData.length > 0) {
                     const fallbackMap: Record<string, string> = {};
@@ -43,20 +67,28 @@ export default function Home() {
                         icon: c.icon || fallbackMap[c.id] || `<svg viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="30"/></svg>`
                     }));
                     setCategories(mappedCats);
+
+                    // Debug: log category ids
+                    console.log('[Sirman] Category IDs:', mappedCats.map(c => c.id));
                 }
 
-                if (!prodErr && prodData && prodData.length > 0) {
-                    const mappedProds: ProductData[] = prodData.map((p: any) => ({
+                if (allProdData.length > 0) {
+                    const mappedProds: ProductData[] = allProdData.map((p: any) => ({
                         ...p,
                         category_id: p.category_id || p.categoryId,
                         category_name: p.category_name || p.categoryName || p.category,
+                        category: p.category_name || p.categoryName || p.category,
                         pdf_name: p.pdf_name || p.pdfName,
                         exploded_view_id: p.exploded_view_id || p.explodedViewId,
                         parts_count: p.parts_count !== undefined ? p.parts_count : (p.partsCount || 0),
                         status: p.discontinued ? 'out_of_production' : 'in_production',
-                        parts: getRealPartsForProduct(p.id, p.code)
+                        parts: []
                     }));
                     setProducts(mappedProds);
+
+                    // Debug: show unique category_ids from products
+                    const uniqueCatIds = [...new Set(mappedProds.map(p => p.category_id))];
+                    console.log('[Sirman] Unique product category_ids:', uniqueCatIds);
                 }
             } catch (err) {
                 console.warn("Supabase fetch notice, using cached Sirman data:", err);
@@ -108,7 +140,13 @@ export default function Home() {
     // Filter products
     const displayProducts = products.filter((p) => {
         const matchesCategory = selectedCategory
-            ? (p.category_id === selectedCategory.id || p.category === selectedCategory.name || (p as any).categoryId === selectedCategory.id)
+            ? (
+                p.category_id === selectedCategory.id ||
+                (p as any).category_id === String(selectedCategory.sirman_id) ||
+                (p.category_name && p.category_name.toLowerCase().trim() === selectedCategory.name.toLowerCase().trim()) ||
+                (p.category && p.category.toLowerCase().trim() === selectedCategory.name.toLowerCase().trim()) ||
+                ((p as any).categoryId === selectedCategory.id)
+            )
             : true;
 
         const q = searchQuery.toLowerCase().trim();
