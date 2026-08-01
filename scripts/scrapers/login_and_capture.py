@@ -20,7 +20,7 @@ async def login_and_capture():
     captured_cookies = []
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False, slow_mo=200)
+        browser = await p.chromium.launch(headless=True, slow_mo=200)
         ctx = await browser.new_context(viewport={"width": 1440, "height": 900})
         page = await ctx.new_page()
 

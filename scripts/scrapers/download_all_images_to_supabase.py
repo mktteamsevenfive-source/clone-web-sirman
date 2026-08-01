@@ -26,11 +26,12 @@ SUPABASE_SERVICE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 SUPABASE_BUCKET  = "diagram_images"
 API_BASE         = "https://api-service.sirman.com"
 
-BASE_DIR         = Path(__file__).parent
-CATALOG_FILE     = BASE_DIR / "sirman_catalog_data.json"
-PARTS_FILE       = BASE_DIR / "sirman_parts.json"
-HEADERS_FILE     = BASE_DIR / "sirman_headers.json"
-LOCAL_CACHE_DIR  = BASE_DIR / "public" / "exploded-views"
+BASE_DIR         = Path(__file__).resolve().parent
+PROJECT_ROOT     = BASE_DIR.parent.parent
+CATALOG_FILE     = PROJECT_ROOT / "sirman_catalog_data.json"
+PARTS_FILE       = PROJECT_ROOT / "sirman_parts.json"
+HEADERS_FILE     = PROJECT_ROOT / "sirman_headers.json"
+LOCAL_CACHE_DIR  = PROJECT_ROOT / "public" / "exploded-views"
 
 LOCAL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -91,24 +92,34 @@ def collect_needed_pdf_names() -> dict[str, str]:
     def add_pdf(pdf_name: str):
         if not pdf_name:
             return
-        # Ensure clean pdf name
         clean = pdf_name.replace(".pdf", "").replace(".png", "")
         if not clean:
             return
-        # Target filenames on Supabase
         needed[f"{pdf_name}.png"] = clean
         needed[f"{clean}.png"] = clean
 
-    if CATALOG_FILE.exists():
-        data = json.load(open(CATALOG_FILE, encoding="utf-8"))
-        for prod in data.get("products", []):
-            add_pdf(prod.get("pdf_name", ""))
+    print("[2] Fetching all pdf_names from Supabase products table...")
+    prods = []
+    offset = 0
+    while True:
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/products?select=pdf_name,exploded_view_id&limit=1000&offset={offset}",
+            headers=SUPABASE_HEADERS
+        )
+        batch = r.json() if r.status_code == 200 else []
+        if not batch:
+            break
+        prods.extend(batch)
+        if len(batch) < 1000:
+            break
+        offset += 1000
 
-    if PARTS_FILE.exists():
-        data = json.load(open(PARTS_FILE, encoding="utf-8"))
-        for cat_name, cat_prods in data.get("categories", {}).items():
-            for prod in cat_prods:
-                add_pdf(prod.get("pdf_name", ""))
+    for prod in prods:
+        pdf = prod.get("pdf_name")
+        view_id = prod.get("exploded_view_id")
+        add_pdf(pdf)
+        if view_id:
+            add_pdf(f"{view_id}.png")
 
     return needed
 

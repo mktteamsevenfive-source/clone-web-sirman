@@ -138,8 +138,17 @@ export default function Home() {
                 .order('code');
 
             if (!error && partsData && partsData.length > 0) {
+                // Deduplicate parts by (code, ref)
+                const uniqueMap = new Map<string, any>();
+                partsData.forEach((pt: any) => {
+                    const key = `${pt.code}_${pt.ref || ''}`;
+                    if (!uniqueMap.has(key)) {
+                        uniqueMap.set(key, pt);
+                    }
+                });
+                const uniqueParts = Array.from(uniqueMap.values());
                 const suggestedMap = new Set(modelParts.filter(p => p.suggested).map(p => p.code));
-                const mergedParts = partsData.map((pt: any) => ({
+                const mergedParts = uniqueParts.map((pt: any) => ({
                     ...pt,
                     suggested: suggestedMap.has(pt.code) || pt.suggested
                 }));

@@ -82,10 +82,42 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
     // Load Hotspot JSON
     const pdfFilename = product.pdf_name || (product as any).pdfName;
     const cleanPdfName = pdfFilename ? pdfFilename.replace('.pdf', '').replace('.png', '') : '';
-    
-    const realDiagramImageUrl = pdfFilename
-        ? `${SUPABASE_CDN_BASE}/${pdfFilename}.png`
-        : null;
+    const viewId = product.exploded_view_id || (product as any).explodedViewId || product.id;
+
+    // Image fallback sequence
+    const [imgSourceIndex, setImgSourceIndex] = useState(0);
+
+    const possibleImageUrls = React.useMemo(() => {
+        const urls: string[] = [];
+        if (pdfFilename) {
+            urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename}`);
+        }
+        if (cleanPdfName) {
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.replace(/ /g, '_')}.png`);
+            urls.push(`/diagram_images/${cleanPdfName}.png`);
+            urls.push(`/diagram_images/${cleanPdfName}.pdf.png`);
+        }
+        if (viewId) urls.push(`${SUPABASE_CDN_BASE}/${viewId}.png`);
+        if (product.id) urls.push(`${SUPABASE_CDN_BASE}/${product.id}.png`);
+        return Array.from(new Set(urls.filter(Boolean)));
+    }, [pdfFilename, cleanPdfName, viewId, product.id]);
+
+    const currentDiagramUrl = possibleImageUrls[imgSourceIndex] || null;
+
+    useEffect(() => {
+        setImgSourceIndex(0);
+        setImgError(false);
+    }, [product.id, pdfFilename]);
+
+    const handleImageError = () => {
+        if (imgSourceIndex < possibleImageUrls.length - 1) {
+            setImgSourceIndex((prev) => prev + 1);
+        } else {
+            setImgError(true);
+        }
+    };
 
     useEffect(() => {
         if (!cleanPdfName) {
@@ -347,7 +379,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                     justifyContent: 'center',
                     position: 'relative',
                 }}>
-                    {realDiagramImageUrl && !imgError ? (
+                    {currentDiagramUrl && !imgError ? (
                         <div style={{
                             position: 'relative',
                             display: 'inline-block',
@@ -355,9 +387,9 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                             maxWidth: '100%',
                         }}>
                             <img
-                                src={realDiagramImageUrl}
+                                src={currentDiagramUrl}
                                 alt={`Exploded Diagram - ${product.model}`}
-                                onError={() => setImgError(true)}
+                                onError={handleImageError}
                                 style={{
                                     display: 'block',
                                     maxHeight: `${VIEWPORT_HEIGHT - 24}px`,

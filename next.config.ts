@@ -4,9 +4,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    useTypeScriptCli: true,
-  },
   images: {
     remotePatterns: [
       {
@@ -18,3 +15,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

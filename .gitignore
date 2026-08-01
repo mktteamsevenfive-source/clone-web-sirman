@@ -25,4 +25,6 @@ diagram_images/
 public/hotspots/
 exports/
 *.csv
+scratch/
+sirman_api_calls.json
 
