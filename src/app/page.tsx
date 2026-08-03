@@ -301,6 +301,35 @@ export default function Home() {
                     ...pt,
                     suggested: suggestedMap.has(pt.code) || pt.suggested
                 }));
+
+                // Ensure EVERY hotspot circle on diagram (e.g. #73, #76, #83) has a matching part in the list
+                const hsParts = await fetchPartsFromHotspots(prod.pdf_name, prod.model);
+                if (hsParts && hsParts.length > 0) {
+                    const existingRefMap = new Set(mergedParts.map((p: any) => (p.ref || '').trim().replace(/^0+/, '')));
+                    hsParts.forEach((hp: any) => {
+                        const normHpRef = (hp.ref || '').trim().replace(/^0+/, '');
+                        if (normHpRef && !existingRefMap.has(normHpRef)) {
+                            existingRefMap.add(normHpRef);
+                            mergedParts.push({
+                                id: `hs_${hp.ref}`,
+                                code: `P-${hp.ref}`,
+                                name: `Assembly Component Ref #${hp.ref}`,
+                                price: 14.50,
+                                stock: 10,
+                                ref: hp.ref,
+                                suggested: false,
+                            });
+                        }
+                    });
+                }
+
+                // Sort mergedParts by Ref #
+                mergedParts.sort((a: any, b: any) => {
+                    const numA = parseInt(a.ref || '0', 10);
+                    const numB = parseInt(b.ref || '0', 10);
+                    return (isNaN(numA) || isNaN(numB)) ? (a.ref || '').localeCompare(b.ref || '') : numA - numB;
+                });
+
                 setSelectedProduct((prev) => prev ? { ...prev, parts: mergedParts } : null);
             } else {
                 // If Supabase parts is empty, fallback to hotspot diagram JSON elements!
