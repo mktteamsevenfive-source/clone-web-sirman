@@ -79,10 +79,50 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
         };
     }, []);
 
-    // Load Hotspot JSON
-    const pdfFilename = product.pdf_name || (product as any).pdfName;
-    const cleanPdfName = pdfFilename ? pdfFilename.replace('.pdf', '').replace('.png', '') : '';
-    const viewId = product.exploded_view_id || (product as any).explodedViewId || product.id;
+    // Multi-Diagram Views state (Table 1, Table 2, Table 3...)
+    interface DiagramTable {
+        id: number;
+        order?: number;
+        name?: string;
+        pdfName?: string;
+        type?: string;
+    }
+    const [diagramViews, setDiagramViews] = useState<DiagramTable[]>([]);
+    const [activeViewIndex, setActiveViewIndex] = useState(0);
+
+    // Fetch product_views.json for multi-diagram tables
+    useEffect(() => {
+        let isMounted = true;
+        const loadProductViews = async () => {
+            try {
+                let viewsMap: Record<string, DiagramTable[]> = {};
+                let res = await fetch('/product_views.json').catch(() => null);
+                if (!res || !res.ok) {
+                    res = await fetch('https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/product_views.json').catch(() => null);
+                }
+                if (res && res.ok) {
+                    viewsMap = await res.json();
+                }
+                const prodViews = viewsMap[String(product.id)] || viewsMap[String(product.code)] || [];
+                if (isMounted) {
+                    setDiagramViews(prodViews);
+                    setActiveViewIndex(0);
+                }
+            } catch {
+                if (isMounted) setDiagramViews([]);
+            }
+        };
+        loadProductViews();
+        return () => {
+            isMounted = false;
+        };
+    }, [product.id, product.code]);
+
+    // Active Table & PDF Name resolution
+    const activeTable = diagramViews[activeViewIndex] || null;
+    const pdfFilename = activeTable?.pdfName || product.pdf_name || (product as any).pdfName;
+    const cleanPdfName = pdfFilename ? pdfFilename.replace(/\.pdf$/i, '').replace(/\.png$/i, '') : '';
+    const viewId = activeTable?.id || product.exploded_view_id || (product as any).explodedViewId || product.id;
 
     // Image fallback sequence
     const [imgSourceIndex, setImgSourceIndex] = useState(0);
@@ -401,6 +441,51 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                     </button>
                 </div>
             </div>
+
+            {/* Multi-Diagram Table Selector Bar */}
+            {diagramViews.length > 1 && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.75rem',
+                    background: '#f1f5f9',
+                    borderBottom: '1px solid #e2e8f0',
+                    overflowX: 'auto',
+                }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>
+                        Diagram Tables ({diagramViews.length}):
+                    </span>
+                    {diagramViews.map((table, idx) => {
+                        const isActive = idx === activeViewIndex;
+                        return (
+                            <button
+                                key={table.id || idx}
+                                onClick={() => {
+                                    setActiveViewIndex(idx);
+                                    setImgSourceIndex(0);
+                                    setImgError(false);
+                                }}
+                                style={{
+                                    padding: '0.375rem 0.75rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: isActive ? 800 : 600,
+                                    color: isActive ? '#fff' : '#334155',
+                                    background: isActive ? '#C8102E' : '#fff',
+                                    border: isActive ? '1px solid #C8102E' : '1px solid #cbd5e1',
+                                    borderRadius: '0.5rem',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    boxShadow: isActive ? '0 2px 4px rgba(200,16,46,0.3)' : 'none',
+                                    transition: 'all 0.15s ease',
+                                }}
+                            >
+                                Table {table.order || idx + 1}: {table.name || `View ${idx + 1}`}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* Diagram Viewport Container */}
             <div

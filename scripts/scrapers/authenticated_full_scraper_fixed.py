@@ -58,7 +58,7 @@ async def capture_sirman_auth():
         async def on_request(req):
             nonlocal captured_bearer
             auth = req.headers.get("authorization", "")
-            if auth and auth.startswith("Bearer "):
+            if auth and auth.startswith("Bearer ") and ("exploded-views" in req.url or "products" in req.url):
                 captured_bearer = auth
                 print(f"  [BEARER TOKEN CAPTURED!] from {req.url[:70]}")
 
@@ -87,11 +87,14 @@ async def capture_sirman_auth():
                 await submit_btn.click()
                 await asyncio.sleep(4)
 
-        consent_btn = await page.query_selector("button:has-text('Authorize'), button:has-text('Allow'), button[type='submit']")
-        if consent_btn and await consent_btn.is_visible():
-            print("  Clicking OAuth Authorize button...")
-            await consent_btn.click()
-            await asyncio.sleep(4)
+        try:
+            consent_btn = await page.query_selector("button:has-text('Authorize'), button:has-text('Allow'), button[type='submit']")
+            if consent_btn and await consent_btn.is_visible():
+                print("  Clicking OAuth Authorize button...")
+                await consent_btn.click()
+                await asyncio.sleep(4)
+        except Exception:
+            pass
 
         print("  Navigating to Product 4578 page...")
         try:
