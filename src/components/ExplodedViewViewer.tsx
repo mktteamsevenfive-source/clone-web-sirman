@@ -127,25 +127,61 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
 
         let isMounted = true;
 
-        // Try local /hotspots/ first, then fallback to Supabase CDN diagram_hotspots
-        fetch(`/hotspots/${cleanPdfName}.json`)
-            .then((res) => {
-                if (res.ok) return res.json();
-                const supabaseHotspotUrl = `https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/${cleanPdfName}.json`;
-                return fetch(supabaseHotspotUrl).then((sbRes) => {
-                    if (sbRes.ok) return sbRes.json();
-                    throw new Error('Hotspot not found');
-                });
-            })
-            .then((data) => {
-                if (isMounted) {
-                    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-                    setHotspotData(parsed);
+        const loadHotspot = async () => {
+            try {
+                // 1. Load index mapping if available
+                let resolvedName = `${cleanPdfName}.json`;
+                try {
+                    let idxRes = await fetch('/hotspots/index.json').catch(() => null);
+                    if (!idxRes || !idxRes.ok) {
+                        idxRes = await fetch('https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/index.json').catch(() => null);
+                    }
+                    if (idxRes && idxRes.ok) {
+                        const indexMap = await idxRes.json();
+                        const mapped = indexMap[cleanPdfName] || indexMap[cleanPdfName.replace(/ /g, '_')];
+                        if (mapped) resolvedName = mapped;
+                    }
+                } catch {
+                    // ignore index error, fallback to direct filename
                 }
-            })
-            .catch(() => {
+
+                const cleanSafe = cleanPdfName.replace(/ /g, '_');
+                const urlsToTry = Array.from(new Set([
+                    `/hotspots/${resolvedName}`,
+                    `/hotspots/${cleanPdfName}.json`,
+                    `/hotspots/${cleanSafe}.json`,
+                    `https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/${resolvedName}`,
+                    `https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/${cleanPdfName}.json`,
+                    `https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/${cleanSafe}.json`
+                ]));
+
+                let loadedData = null;
+                for (const url of urlsToTry) {
+                    try {
+                        const res = await fetch(url);
+                        if (res.ok) {
+                            loadedData = await res.json();
+                            break;
+                        }
+                    } catch {
+                        // continue trying next URL
+                    }
+                }
+
+                if (isMounted) {
+                    if (loadedData) {
+                        const parsed = typeof loadedData === 'string' ? JSON.parse(loadedData) : loadedData;
+                        setHotspotData(parsed);
+                    } else {
+                        setHotspotData(null);
+                    }
+                }
+            } catch {
                 if (isMounted) setHotspotData(null);
-            });
+            }
+        };
+
+        loadHotspot();
 
         return () => {
             isMounted = false;
