@@ -100,6 +100,105 @@ export default function Home() {
         loadData();
     }, []);
 
+    const isUrlInitializedRef = React.useRef(false);
+
+    // 1. Initial State Restoration from URL query parameters on mount/load
+    useEffect(() => {
+        if (loading || products.length === 0 || isUrlInitializedRef.current) return;
+        isUrlInitializedRef.current = true;
+
+        const params = new URLSearchParams(window.location.search);
+        const prodCodeOrId = params.get('product') || params.get('p') || params.get('code');
+        const catId = params.get('category') || params.get('c');
+        const q = params.get('q');
+        const ref = params.get('ref');
+        const tab = params.get('tab');
+
+        if (tab === 'home' || tab === 'catalog') {
+            setActiveTab(tab as 'home' | 'catalog');
+        }
+        if (q) {
+            setSearchQuery(q);
+        }
+        if (catId && categories.length > 0) {
+            const foundCat = categories.find(c => c.id === catId || c.name.toLowerCase() === catId.toLowerCase());
+            if (foundCat) setSelectedCategory(foundCat);
+        }
+        if (prodCodeOrId) {
+            const cleanKey = prodCodeOrId.toLowerCase().trim();
+            const foundProd = products.find(p =>
+                String(p.id).toLowerCase() === cleanKey ||
+                p.code.toLowerCase() === cleanKey ||
+                (p.pdf_name && p.pdf_name.toLowerCase().replace(/\.pdf$/i, '') === cleanKey)
+            );
+            if (foundProd) {
+                handleSelectProduct(foundProd);
+            }
+        }
+        if (ref) {
+            setSelectedRef(ref);
+        }
+    }, [loading, products.length, categories.length]);
+
+    // 2. Sync state changes to URL search params without triggering page reloads
+    useEffect(() => {
+        if (loading || !isUrlInitializedRef.current) return;
+        const params = new URLSearchParams();
+
+        if (activeTab === 'home') params.set('tab', 'home');
+        if (selectedProduct) {
+            params.set('product', selectedProduct.code || String(selectedProduct.id));
+            if (selectedRef) params.set('ref', selectedRef);
+        } else {
+            if (selectedCategory) params.set('category', selectedCategory.id);
+            if (searchQuery) params.set('q', searchQuery);
+        }
+
+        const newQuery = params.toString();
+        const newRelativePathQuery = window.location.pathname + (newQuery ? `?${newQuery}` : '');
+        if (window.location.search !== (newQuery ? `?${newQuery}` : '')) {
+            window.history.replaceState(null, '', newRelativePathQuery);
+        }
+    }, [selectedProduct, selectedCategory, searchQuery, selectedRef, activeTab, loading]);
+
+    // 3. Listen to browser Back / Forward buttons (popstate)
+    useEffect(() => {
+        const handlePopState = () => {
+            const params = new URLSearchParams(window.location.search);
+            const prodCodeOrId = params.get('product') || params.get('p') || params.get('code');
+            const catId = params.get('category') || params.get('c');
+            const q = params.get('q') || '';
+            const ref = params.get('ref') || null;
+            const tab = (params.get('tab') as 'home' | 'catalog') || 'catalog';
+
+            setActiveTab(tab);
+            setSearchQuery(q);
+            setSelectedRef(ref);
+
+            if (catId) {
+                const foundCat = categories.find(c => c.id === catId || c.name.toLowerCase() === catId.toLowerCase());
+                setSelectedCategory(foundCat || null);
+            } else {
+                setSelectedCategory(null);
+            }
+
+            if (prodCodeOrId) {
+                const cleanKey = prodCodeOrId.toLowerCase().trim();
+                const foundProd = products.find(p =>
+                    String(p.id).toLowerCase() === cleanKey ||
+                    p.code.toLowerCase() === cleanKey ||
+                    (p.pdf_name && p.pdf_name.toLowerCase().replace(/\.pdf$/i, '') === cleanKey)
+                );
+                if (foundProd) handleSelectProduct(foundProd);
+            } else {
+                setSelectedProduct(null);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [products, categories]);
+
     // Add to cart helper
     const handleAddToCart = (part: PartData) => {
         setCart((prev) => {
