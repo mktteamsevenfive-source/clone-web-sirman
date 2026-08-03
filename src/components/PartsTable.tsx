@@ -121,9 +121,7 @@ export const PartsTable: React.FC<PartsTableProps> = ({
                     </div>
                 ) : (
                     filteredParts.map((part, idx) => {
-                        const refText = part.ref && part.ref.trim() !== ''
-                            ? part.ref.trim()
-                            : (part.code.replace(/^P-/, '').match(/^([0-9]{1,3}[A-Z]?)/i)?.[1] || String(idx + 1).padStart(2, '0'));
+                        const refText = part.ref && part.ref.trim() !== '' ? part.ref.trim() : String(idx + 1).padStart(2, '0');
                         const normRef = refText ? refText.replace(/^0+/, '') : '';
                         const isSelected = isRefEqual(part.ref || refText, selectedRef);
                         const countInCart = cartCountMap[part.code] || 0;
