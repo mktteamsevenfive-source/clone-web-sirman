@@ -129,20 +129,39 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
 
     const possibleImageUrls = React.useMemo(() => {
         const urls: string[] = [];
+        const tableName = activeTable?.name || '';
+        const cleanTableName = tableName ? tableName.replace(/ /g, '_').toLowerCase() : '';
+
         if (pdfFilename) {
             urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename}.png`);
             urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename}`);
+            urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename.toLowerCase()}.png`);
         }
         if (cleanPdfName) {
             urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.toLowerCase()}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName}.pdf.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.toLowerCase()}.pdf.png`);
             urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.replace(/ /g, '_')}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.replace(/ /g, '_').toLowerCase()}.png`);
             urls.push(`/diagram_images/${cleanPdfName}.png`);
+            urls.push(`/diagram_images/${cleanPdfName.toLowerCase()}.png`);
             urls.push(`/diagram_images/${cleanPdfName}.pdf.png`);
         }
-        if (viewId) urls.push(`${SUPABASE_CDN_BASE}/${viewId}.png`);
-        if (product.id) urls.push(`${SUPABASE_CDN_BASE}/${product.id}.png`);
+        if (cleanTableName) {
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanTableName}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanTableName}.pdf.png`);
+        }
+        if (viewId) {
+            urls.push(`${SUPABASE_CDN_BASE}/${viewId}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${viewId}.jpg`);
+            urls.push(`/diagram_images/${viewId}.png`);
+        }
+        if (product.id) {
+            urls.push(`${SUPABASE_CDN_BASE}/${product.id}.png`);
+        }
         return Array.from(new Set(urls.filter(Boolean)));
-    }, [pdfFilename, cleanPdfName, viewId, product.id]);
+    }, [pdfFilename, cleanPdfName, viewId, product.id, activeTable?.name]);
 
     const currentDiagramUrl = possibleImageUrls[imgSourceIndex] || null;
 
