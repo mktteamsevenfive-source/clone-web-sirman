@@ -223,6 +223,56 @@ export default function Home() {
         cartCountMap[i.part.code] = i.quantity;
     });
 
+    // Helper to fetch parts from hotspot diagram JSON elements if DB parts are empty
+    const fetchPartsFromHotspots = async (pdfName?: string, modelName?: string): Promise<PartData[]> => {
+        if (!pdfName) return [];
+        const cleanPdf = pdfName.replace(/\.pdf$/i, '').replace(/\.png$/i, '').replace(/\.webp$/i, '');
+        const cleanSafe = cleanPdf.replace(/ /g, '_');
+
+        const urlsToTry = Array.from(new Set([
+            `/hotspots/${cleanPdf}.json`,
+            `/hotspots/${cleanSafe}.json`,
+            `https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/${cleanPdf}.json`,
+            `https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/${cleanSafe}.json`,
+        ]));
+
+        for (const url of urlsToTry) {
+            try {
+                const res = await fetch(url);
+                if (res.ok) {
+                    const data = await res.json();
+                    const elems: any[] = data.clickableElements || [];
+                    const refMap = new Map<string, PartData>();
+
+                    elems.forEach((elem: any, idx: number) => {
+                        const refId = String(elem.itemId || elem.matchedItemId || idx + 1);
+                        if (!refMap.has(refId)) {
+                            refMap.set(refId, {
+                                id: `hs_${refId}`,
+                                code: `P-${refId}`,
+                                name: `Part Ref #${refId}`,
+                                price: 14.50,
+                                stock: 10,
+                                ref: refId,
+                            });
+                        }
+                    });
+
+                    if (refMap.size > 0) {
+                        return Array.from(refMap.values()).sort((a, b) => {
+                            const numA = parseInt(a.ref || '0', 10);
+                            const numB = parseInt(b.ref || '0', 10);
+                            return (isNaN(numA) || isNaN(numB)) ? (a.ref || '').localeCompare(b.ref || '') : numA - numB;
+                        });
+                    }
+                }
+            } catch {
+                // try next URL
+            }
+        }
+        return [];
+    };
+
     // Handle selecting a product & fetching its real model-specific spare parts
     const handleSelectProduct = async (prod: ProductData) => {
         const modelParts = getRealPartsForProduct(prod.id, prod.code);
@@ -252,9 +302,19 @@ export default function Home() {
                     suggested: suggestedMap.has(pt.code) || pt.suggested
                 }));
                 setSelectedProduct((prev) => prev ? { ...prev, parts: mergedParts } : null);
+            } else {
+                // If Supabase parts is empty, fallback to hotspot diagram JSON elements!
+                const hsParts = await fetchPartsFromHotspots(prod.pdf_name, prod.model);
+                if (hsParts.length > 0) {
+                    setSelectedProduct((prev) => prev ? { ...prev, parts: hsParts } : null);
+                }
             }
         } catch (err) {
             console.warn("Supabase parts fetch notice:", err);
+            const hsParts = await fetchPartsFromHotspots(prod.pdf_name, prod.model);
+            if (hsParts.length > 0) {
+                setSelectedProduct((prev) => prev ? { ...prev, parts: hsParts } : null);
+            }
         } finally {
             setPartsLoading(false);
         }
