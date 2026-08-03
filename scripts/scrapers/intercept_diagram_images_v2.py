@@ -158,23 +158,20 @@ async def main():
 
             product_url = f'https://www.service.sirman.com/products/{prod_id}/tavola/{view_id}'
 
-            # Intercept the Sirman API response that contains the signed URL
-            signed_url_container = []
+            # Directly intercept the CloudFront JPEG payload as the browser renders it
+            captured_bytes = []
 
             page = await ctx.new_page()
 
-            async def on_response(response, _container=signed_url_container):
-                if _container:
+            async def on_response(response, _cap=captured_bytes):
+                if _cap:
                     return
                 url = response.url
-                # The Sirman API returns a JSON with the signed CloudFront URL
-                if ('api-service.sirman.com/service-dwh/resources/exploded-view/jpeg/' in url
-                        and response.status == 200):
+                if 'service-media-prod.service247.net' in url and response.status == 200:
                     try:
-                        data = await response.json()
-                        su = data.get('url', '')
-                        if su and 'service247' in su:
-                            _container.append(su)
+                        body = await response.body()
+                        if len(body) > 20000:
+                            _cap.append(body)
                     except Exception:
                         pass
 
@@ -182,42 +179,16 @@ async def main():
 
             try:
                 await page.goto(product_url, wait_until='domcontentloaded', timeout=25000)
-                # Wait up to 25 seconds for the Sirman API to return signed URL
-                deadline = time.time() + 25
-                while not signed_url_container and time.time() < deadline:
+                # Wait for page JS to load the CloudFront image
+                deadline = time.time() + 20
+                while not captured_bytes and time.time() < deadline:
                     await asyncio.sleep(0.5)
             except Exception:
                 pass
 
             await page.close()
 
-            if not signed_url_container:
-                fail += 1
-                if i <= 20 or i % 50 == 0:
-                    print(f'  [{i}/{total}] NO URL  {model}')
-                continue
-
-            signed_url = signed_url_container[0]
-
-            # Download image via browser context (has Cognito session cookies)
-            img_data = None
-            try:
-                img_resp = await ctx.request.get(signed_url, timeout=30000)
-                if img_resp.status == 200:
-                    body = await img_resp.body()
-                    if len(body) > 20000:
-                        img_data = body
-            except Exception:
-                pass
-
-            # If browser context fails, try plain HTTP (signed URL may be public)
-            if not img_data:
-                try:
-                    r = req_lib.get(signed_url, timeout=30)
-                    if r.status_code == 200 and len(r.content) > 20000:
-                        img_data = r.content
-                except Exception:
-                    pass
+            img_data = captured_bytes[0] if captured_bytes else None
 
             if img_data:
                 filenames = list({f'{pdf}.png', f'{clean}.png', f'{clean_safe}.png'})
@@ -235,7 +206,7 @@ async def main():
             else:
                 fail += 1
                 if i <= 20 or i % 50 == 0:
-                    print(f'  [{i}/{total}] IMG 403  {model}')
+                    print(f'  [{i}/{total}] NO IMG  {model} | pdf={pdf}')
 
         await browser.close()
 

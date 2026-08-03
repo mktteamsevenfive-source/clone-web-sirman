@@ -126,10 +126,16 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
         }
 
         let isMounted = true;
+
+        // Try local /hotspots/ first, then fallback to Supabase CDN diagram_hotspots
         fetch(`/hotspots/${cleanPdfName}.json`)
             .then((res) => {
                 if (res.ok) return res.json();
-                throw new Error('Hotspot not found');
+                const supabaseHotspotUrl = `https://ofrerwyoasklgsejlbzr.supabase.co/storage/v1/object/public/diagram_hotspots/${cleanPdfName}.json`;
+                return fetch(supabaseHotspotUrl).then((sbRes) => {
+                    if (sbRes.ok) return sbRes.json();
+                    throw new Error('Hotspot not found');
+                });
             })
             .then((data) => {
                 if (isMounted) {
