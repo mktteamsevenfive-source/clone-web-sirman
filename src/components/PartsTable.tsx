@@ -121,8 +121,11 @@ export const PartsTable: React.FC<PartsTableProps> = ({
                     </div>
                 ) : (
                     filteredParts.map((part, idx) => {
-                        const normRef = part.ref ? part.ref.replace(/^0+/, '') : '';
-                        const isSelected = isRefEqual(part.ref, selectedRef);
+                        const refText = part.ref && part.ref.trim() !== ''
+                            ? part.ref.trim()
+                            : (part.code.replace(/^P-/, '').match(/^([0-9]{1,3}[A-Z]?)/i)?.[1] || String(idx + 1).padStart(2, '0'));
+                        const normRef = refText ? refText.replace(/^0+/, '') : '';
+                        const isSelected = isRefEqual(part.ref || refText, selectedRef);
                         const countInCart = cartCountMap[part.code] || 0;
 
                         return (
@@ -132,8 +135,8 @@ export const PartsTable: React.FC<PartsTableProps> = ({
                                     if (normRef) itemRefs.current[normRef] = el;
                                 }}
                                 onClick={() => {
-                                    if (part.ref && onSelectPartRef) {
-                                        onSelectPartRef(part.ref);
+                                    if (onSelectPartRef) {
+                                        onSelectPartRef(part.ref || refText);
                                     }
                                 }}
                                 className={`p-3.5 transition-all flex items-center justify-between gap-3 text-xs cursor-pointer border-l-4 ${
@@ -144,15 +147,13 @@ export const PartsTable: React.FC<PartsTableProps> = ({
                             >
                                 <div className="space-y-0.5 min-w-0 flex-1">
                                     <div className="font-mono font-bold text-slate-900 flex items-center gap-1.5 flex-wrap">
-                                        {part.ref && (
-                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                                isSelected
-                                                    ? 'bg-[#C8102E] text-white shadow-xs'
-                                                    : 'bg-slate-100 text-slate-600'
-                                            }`}>
-                                                Ref #{part.ref}
-                                            </span>
-                                        )}
+                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                            isSelected
+                                                ? 'bg-[#C8102E] text-white shadow-xs'
+                                                : 'bg-slate-100 text-slate-600'
+                                        }`}>
+                                            Ref #{refText}
+                                        </span>
                                         <span className="text-[#C8102E] flex items-center gap-1 font-bold">
                                             {part.code}
                                             {part.suggested && (
