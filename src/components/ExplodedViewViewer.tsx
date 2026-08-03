@@ -131,33 +131,39 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
         const urls: string[] = [];
         const tableName = activeTable?.name || '';
         const cleanTableName = tableName ? tableName.replace(/ /g, '_').toLowerCase() : '';
+        const cleanPdf = pdfFilename ? pdfFilename.replace(/\.pdf$/i, '').replace(/\.png$/i, '').replace(/\.webp$/i, '') : '';
 
-        if (pdfFilename) {
-            urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename}.png`);
-            urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename}`);
-            urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename.toLowerCase()}.png`);
+        if (cleanPdf) {
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf}.webp`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf.toLowerCase()}.webp`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf.replace(/ /g, '_')}.webp`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf.replace(/ /g, '_').toLowerCase()}.webp`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf.toLowerCase()}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf}.pdf.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf.toLowerCase()}.pdf.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf.replace(/ /g, '_')}.png`);
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdf.replace(/ /g, '_').toLowerCase()}.png`);
+            urls.push(`/diagram_images/${cleanPdf}.webp`);
+            urls.push(`/diagram_images/${cleanPdf}.png`);
+            urls.push(`/diagram_images/${cleanPdf.toLowerCase()}.png`);
         }
-        if (cleanPdfName) {
-            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName}.png`);
-            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.toLowerCase()}.png`);
-            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName}.pdf.png`);
-            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.toLowerCase()}.pdf.png`);
-            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.replace(/ /g, '_')}.png`);
-            urls.push(`${SUPABASE_CDN_BASE}/${cleanPdfName.replace(/ /g, '_').toLowerCase()}.png`);
-            urls.push(`/diagram_images/${cleanPdfName}.png`);
-            urls.push(`/diagram_images/${cleanPdfName.toLowerCase()}.png`);
-            urls.push(`/diagram_images/${cleanPdfName}.pdf.png`);
+        if (pdfFilename) {
+            urls.push(`${SUPABASE_CDN_BASE}/${pdfFilename}`);
         }
         if (cleanTableName) {
+            urls.push(`${SUPABASE_CDN_BASE}/${cleanTableName}.webp`);
             urls.push(`${SUPABASE_CDN_BASE}/${cleanTableName}.png`);
             urls.push(`${SUPABASE_CDN_BASE}/${cleanTableName}.pdf.png`);
         }
         if (viewId) {
+            urls.push(`${SUPABASE_CDN_BASE}/${viewId}.webp`);
             urls.push(`${SUPABASE_CDN_BASE}/${viewId}.png`);
             urls.push(`${SUPABASE_CDN_BASE}/${viewId}.jpg`);
             urls.push(`/diagram_images/${viewId}.png`);
         }
         if (product.id) {
+            urls.push(`${SUPABASE_CDN_BASE}/${product.id}.webp`);
             urls.push(`${SUPABASE_CDN_BASE}/${product.id}.png`);
         }
         return Array.from(new Set(urls.filter(Boolean)));

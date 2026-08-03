@@ -56,30 +56,43 @@ def main():
     except Exception as e:
         print(f"  [Notice] Bucket check: {e}")
 
-    # 2. Upload PNG Files
-    png_files = list(IMG_DIR.glob("*.png"))
-    print(f"\n[2/2] Uploading {len(png_files)} PNG Diagram Images (79.76 MB total)...")
+    # 2. Upload Files (convert to Lossless WebP)
+    from PIL import Image
+    import io
+
+    image_files = list(IMG_DIR.glob("*.png")) + list(IMG_DIR.glob("*.webp"))
+    print(f"\n[2/2] Uploading {len(image_files)} Diagram Images (converting PNG to Lossless WebP)...")
 
     uploaded_count = 0
     skipped_count = 0
 
-    for idx, img_path in enumerate(png_files, 1):
-        file_name = img_path.name
-        # Sanitize filename for S3/Supabase key safety
-        safe_key = file_name.encode('ascii', errors='ignore').decode('ascii').replace(' ', '_')
+    for idx, img_path in enumerate(image_files, 1):
+        raw_name = img_path.stem
+        webp_name = f"{raw_name}.webp"
+        safe_key = webp_name.encode('ascii', errors='ignore').decode('ascii').replace(' ', '_')
         if not safe_key or safe_key.startswith('.'):
-            safe_key = f"diagram_{idx}.png"
+            safe_key = f"diagram_{idx}.webp"
 
-        print(f"  [{idx}/{len(png_files)}] Uploading {file_name} as {safe_key} ({img_path.stat().st_size / 1024:.1f} KB)...", end=" ")
+        print(f"  [{idx}/{len(image_files)}] Converting & Uploading {img_path.name} as {safe_key}...", end=" ")
 
         try:
             with open(img_path, "rb") as f:
                 file_bytes = f.read()
 
+            if img_path.suffix.lower() == ".png":
+                img = Image.open(io.BytesIO(file_bytes))
+                if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+                    img = img.convert("RGBA")
+                else:
+                    img = img.convert("RGB")
+                buf = io.BytesIO()
+                img.save(buf, format="WEBP", lossless=True, method=4)
+                file_bytes = buf.getvalue()
+
             res = supabase.storage.from_(BUCKET_NAME).upload(
                 path=safe_key,
                 file=file_bytes,
-                file_options={"content-type": "image/png", "x-upsert": "true"}
+                file_options={"content-type": "image/webp", "x-upsert": "true"}
             )
             uploaded_count += 1
             print("Done [OK]")
