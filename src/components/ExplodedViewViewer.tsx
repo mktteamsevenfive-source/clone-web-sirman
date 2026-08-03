@@ -323,18 +323,40 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
 
 
 
-    // Helper to parse transform matrix coordinates (x, y)
-    // Handles BOTH comma-separated: matrix(1,0,0,-1,tx,ty)  AND  space-separated: matrix(1 0 0 1 tx ty)
-    const parseTransformMatrix = (matrixStr?: string) => {
-        if (!matrixStr) return { x: 0, y: 0 };
-        const match = matrixStr.match(/matrix\(([^)]+)\)/);
-        if (match) {
-            const parts = match[1].split(/[,\s]+/).map((v) => floatVal(v.trim())).filter((_, i, arr) => arr.length > 1 || i === 0);
-            if (parts.length >= 6) {
-                return { x: parts[4], y: parts[5] };
+    // Helper to calculate exact transformed SVG coordinates (x, y) for a hotspot element
+    const getElementCoordinates = (elem: ClickableElement) => {
+        let a = 1, b = 0, c = 0, d = 1, e = 0, f = 0;
+        if (elem.transform) {
+            const match = elem.transform.match(/matrix\(([^)]+)\)/);
+            if (match) {
+                const parts = match[1].split(/[,\s]+/).map((v) => floatVal(v.trim())).filter((_, i, arr) => arr.length > 1 || i === 0);
+                if (parts.length >= 6) {
+                    a = parts[0]; b = parts[1]; c = parts[2]; d = parts[3]; e = parts[4]; f = parts[5];
+                }
             }
         }
-        return { x: 0, y: 0 };
+
+        let px = 0;
+        let py = 0;
+
+        if (elem.content) {
+            const cxMatch = elem.content.match(/cx=["']([^"']+)["']/);
+            const cyMatch = elem.content.match(/cy=["']([^"']+)["']/);
+            if (cxMatch && cyMatch) {
+                px = floatVal(cxMatch[1]);
+                py = floatVal(cyMatch[1]);
+            }
+        }
+
+        if (px === 0 && py === 0) {
+            if (elem.x) px = floatVal(String(elem.x).split(/\s+/)[0]);
+            if (elem.y) py = floatVal(String(elem.y).split(/\s+/)[0]);
+        }
+
+        const x = a * px + c * py + e;
+        const y = b * px + d * py + f;
+
+        return { x, y };
     };
 
     const floatVal = (val: string) => {
@@ -590,7 +612,7 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                             const isLongRef = elemRef.length > 2;
                                             const radius = isActive ? (isLongRef ? 19 : 17) : (isLongRef ? 13.5 : 11);
                                             const fontSz = isActive ? (isLongRef ? 9.5 : 11) : (isLongRef ? 7.5 : 9);
-                                            const coords = parseTransformMatrix(elem.transform);
+                                            const coords = getElementCoordinates(elem);
 
 
                                             return (
