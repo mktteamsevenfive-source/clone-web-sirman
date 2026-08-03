@@ -259,11 +259,12 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
 
 
     // Helper to parse transform matrix coordinates (x, y)
+    // Handles BOTH comma-separated: matrix(1,0,0,-1,tx,ty)  AND  space-separated: matrix(1 0 0 1 tx ty)
     const parseTransformMatrix = (matrixStr?: string) => {
         if (!matrixStr) return { x: 0, y: 0 };
         const match = matrixStr.match(/matrix\(([^)]+)\)/);
         if (match) {
-            const parts = match[1].split(',').map((v) => floatVal(v.trim()));
+            const parts = match[1].split(/[,\s]+/).map((v) => floatVal(v.trim())).filter((_, i, arr) => arr.length > 1 || i === 0);
             if (parts.length >= 6) {
                 return { x: parts[4], y: parts[5] };
             }
@@ -275,6 +276,19 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
         const parsed = parseFloat(val);
         return isNaN(parsed) ? 0 : parsed;
     };
+
+    // Detect if root hotspot transform flips Y axis (negative Y scale = PDF coordinate system)
+    // If flipped, text needs scale(1,-1) to read right-side-up
+    const rootYScale = React.useMemo(() => {
+        if (!hotspotData?.transform) return 1;
+        const match = hotspotData.transform.match(/matrix\(([^)]+)\)/);
+        if (match) {
+            const parts = match[1].split(/[,\s]+/).map((v) => floatVal(v.trim()));
+            if (parts.length >= 6) return parts[3]; // d = Y-scale in matrix(a b c d e f)
+        }
+        return 1;
+    }, [hotspotData?.transform]);
+    const isYFlipped = rootYScale < 0;
 
     // Find matching part name for tooltip
     const getPartNameForRef = (ref: string) => {
@@ -498,8 +512,8 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                                         }}
                                                     />
 
-                                                    {/* Text flipped back RIGHT-SIDE UP */}
-                                                    <g transform={`translate(${coords.x}, ${coords.y}) scale(1, -1)`}>
+                                                    {/* Text: flip back right-side-up ONLY if root transform has flipped Y axis */}
+                                                    <g transform={`translate(${coords.x}, ${coords.y})${isYFlipped ? ' scale(1, -1)' : ''}`}>
                                                         <text
                                                             x="0"
                                                             y="0"
@@ -515,9 +529,9 @@ export const ExplodedViewViewer: React.FC<ExplodedViewViewerProps> = ({
                                                     </g>
 
 
-                                                    {/* Hover Tooltip flipped back RIGHT-SIDE UP */}
+                                                    {/* Hover Tooltip: flip back ONLY if root transform has flipped Y */}
                                                     {isHovered && (
-                                                        <g transform={`translate(${coords.x + 18}, ${coords.y - 12}) scale(1, -1)`}>
+                                                        <g transform={`translate(${coords.x + 18}, ${coords.y - 12})${isYFlipped ? ' scale(1, -1)' : ''}`}>
                                                             <rect
                                                                 x="0"
                                                                 y="-20"
