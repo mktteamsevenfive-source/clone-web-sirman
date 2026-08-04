@@ -86,12 +86,20 @@ def get_missing_diagram_tables(existing_images: set) -> list:
 
     return missing
 
+sup_session = req_lib.Session()
+adapter = req_lib.adapters.HTTPAdapter(max_retries=3)
+sup_session.mount("https://", adapter)
+
 def upload_to_supabase(filename: str, data: bytes) -> bool:
     url = f'{SUPABASE_URL}/storage/v1/object/diagram_images/{filename}'
-    r = req_lib.post(url,
-                     headers={**SUP_HEADERS, 'Content-Type': 'image/png', 'x-upsert': 'true'},
-                     data=data, timeout=30)
-    return r.status_code in (200, 201)
+    try:
+        r = sup_session.post(url,
+                             headers={**SUP_HEADERS, 'Content-Type': 'image/png', 'x-upsert': 'true'},
+                             data=data, timeout=15)
+        return r.status_code in (200, 201)
+    except Exception as e:
+        print(f"  [UPLOAD RETRY WARN] {filename}: {e}")
+        return False
 
 async def main():
     print("=" * 65)
