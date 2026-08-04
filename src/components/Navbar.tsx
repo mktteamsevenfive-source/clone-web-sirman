@@ -31,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         className="flex items-center gap-2 cursor-pointer group select-none"
                     >
                         <span className="font-heading text-2xl sm:text-3xl font-extrabold text-[#C8102E] tracking-tight group-hover:opacity-90 transition-opacity">
-                            SIRMAN
+                            SEVENFIVE
                         </span>
                         <span className="bg-red-50 text-[#C8102E] border border-red-100 text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider shadow-2xs">
                             SERVICE

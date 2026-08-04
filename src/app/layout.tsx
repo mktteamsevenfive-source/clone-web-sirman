@@ -13,9 +13,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Sirman Service - Commercial Equipment & Spare Parts Catalog",
-  description: "Official Sirman spare parts catalog, exploded assembly diagrams, machine model specs, and technical support documentation.",
-  keywords: "Sirman, spare parts, commercial kitchen equipment, exploded view, slicers, food processors, meat grinders",
+  title: "SevenFive Service - Commercial Equipment & Spare Parts Catalog",
+  description: "Official SevenFive spare parts catalog, exploded assembly diagrams, machine model specs, and technical support documentation.",
+  keywords: "SevenFive, Sirman, spare parts, commercial kitchen equipment, exploded view, slicers, food processors, meat grinders",
 };
 
 export default function RootLayout({
