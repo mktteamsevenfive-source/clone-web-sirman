@@ -8,6 +8,7 @@ import { ProductTable } from '@/components/ProductTable';
 import { ExplodedViewViewer } from '@/components/ExplodedViewViewer';
 import { PartsTable } from '@/components/PartsTable';
 import { CategoryData, ProductData, PartData, FALLBACK_CATEGORIES, FALLBACK_PRODUCTS, getRealPartsForProduct, deduplicateCategories, cleanText } from '@/lib/data';
+import { SUGGESTED_CODES_SET } from '@/lib/suggested_set';
 import { supabase } from '@/lib/supabase';
 import { ChevronLeft, Loader2, X, SearchX, ShoppingBag, Trash2, Send, CheckCircle } from 'lucide-react';
 
@@ -296,10 +297,9 @@ export default function Home() {
                     }
                 });
                 const uniqueParts = Array.from(uniqueMap.values());
-                const suggestedMap = new Set(modelParts.filter(p => p.suggested).map(p => p.code));
                 const mergedParts = uniqueParts.map((pt: any) => ({
                     ...pt,
-                    suggested: suggestedMap.has(pt.code) || pt.suggested
+                    suggested: SUGGESTED_CODES_SET.has(pt.code) || SUGGESTED_CODES_SET.has(String(pt.id)) || Boolean(pt.suggested)
                 }));
 
                 // Ensure EVERY hotspot circle on diagram (e.g. #73, #76, #83) has a matching part in the list
