@@ -114,10 +114,20 @@ export const PartsTable: React.FC<PartsTableProps> = ({
                         <span className="text-xs font-semibold">Loading real spare parts...</span>
                     </div>
                 ) : filteredParts.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400 text-xs font-medium">
-                        {onlySuggested
-                            ? 'No suggested spare parts found for this filter.'
-                            : 'No spare parts found for this model.'}
+                    <div className="text-center py-12 text-slate-400 text-xs font-medium px-4">
+                        {onlySuggested ? (
+                            <div className="flex flex-col items-center justify-center gap-2.5">
+                                <p>No suggested spare parts found for this filter.</p>
+                                <button
+                                    onClick={() => setOnlySuggested(false)}
+                                    className="inline-flex items-center gap-1.5 text-[#C8102E] font-bold hover:underline bg-red-50 hover:bg-red-100 text-xs px-3 py-1.5 rounded-xl border border-red-200 transition-all cursor-pointer shadow-2xs"
+                                >
+                                    Show all {parts.length} spare parts
+                                </button>
+                            </div>
+                        ) : (
+                            'No spare parts found for this model.'
+                        )}
                     </div>
                 ) : (
                     filteredParts.map((part, idx) => {
